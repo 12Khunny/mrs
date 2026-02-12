@@ -1,23 +1,48 @@
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import AuthProvider, { useAuth } from "./providers/authProvider";
+import LoginPage from "./pages/auth/Login";
+import Navbar from "./components/Navbar";
 
-function App() {
+function ProtectedLayout({ children }) {
+  const { token } = useAuth();
+
+  if (!token) return <Navigate to="/login" replace />;
+
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      
-      
-      
+      <Navbar />   {/* ⭐ Navbar อยู่ตรงนี้ */}
+      {children}
     </>
-  )
+  );
 }
 
-export default App
+function Home() {
+  return <div style={{ padding: 16 }}>หน้าแรก</div>;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+
+          {/* หน้า login ไม่มี navbar */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* ทุกหน้าหลัง login จะมี navbar */}
+          <Route
+            path="/"
+            element={
+              <ProtectedLayout>
+                <Home />
+              </ProtectedLayout>
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}

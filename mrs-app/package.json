@@ -10,12 +10,19 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "e": "electron .",
-    "builder": "electron-builder"
+    "builder": "electron-builder",
+    "desktop": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && npm run e\""
   },
   "dependencies": {
+    "axios": "^1.13.5",
     "electron": "^40.3.0",
+    "primeflex": "^4.0.0",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.7",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.0",
+    "sweetalert2": "^11.26.18"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
