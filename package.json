@@ -1,0 +1,16 @@
+{
+  "name": "mrs",
+  "private": true,
+  "workspaces": [
+    "apps/frontend/mrs-app",
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm -w apps/frontend/mrs-app run dev",
+    "dev:backend": "npm -w apps/backend run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

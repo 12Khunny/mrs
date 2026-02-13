@@ -1,0 +1,260 @@
+/* =========================
+   MRS Navbar (Responsive)
+   ========================= */
+
+.mrs-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 16px 12px;
+  background: transparent;
+}
+
+.mrs-nav__card {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+
+  padding: 0 14px;
+  height: 64px;
+
+  background: #ffffff;
+  border: 1px solid #e6e9ef;
+  border-radius: 10px;
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.12);
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* =========================
+   LEFT (Brand / Title)
+   ========================= */
+.mrs-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  cursor: pointer;
+  user-select: none;
+
+  flex: 0 1 38%;
+  min-width: 180px;
+  max-width: 520px;
+  min-height: 0;
+}
+
+.mrs-home {
+  font-size: 1.25rem;
+  opacity: 0.7;
+}
+
+.mrs-title {
+  font-weight: 700;
+  color: #111827;
+
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================
+   CENTER (Menu)
+   ========================= */
+.mrs-center {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  min-width: 0;
+}
+
+.mrs-menuItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+
+  color: #6b7280;
+  font-weight: 600;
+
+  transition: background 0.15s ease, color 0.15s ease;
+
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mrs-menuItem i {
+  font-size: 1.05rem;
+  opacity: 0.8;
+}
+
+.mrs-menuItem:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.mrs-menuItem.is-active {
+  color: #0ea5e9; /* โทนฟ้าแบบภาพตัวอย่าง */
+}
+
+.mrs-vline {
+  width: 1px;
+  height: 26px;
+  background: #e5e7eb;
+  display: inline-block;
+}
+
+/* =========================
+   RIGHT (User chip)
+   ========================= */
+.mrs-right {
+  flex: 0 1 28%;
+  min-width: 170px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* user chip: ชื่อ + ไอคอน */
+.mrs-userChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #e6e9ef;
+  background: #ffffff;
+
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.mrs-userChip:hover {
+  background: #f8fafc;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.mrs-userChip__name {
+  font-weight: 600;
+  color: #6b7280;
+
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mrs-userChip__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.mrs-userChip__icon .pi {
+  font-size: 1.1rem;
+}
+
+/* =========================
+   OverlayPanel (PrimeReact)
+   ========================= */
+.mrs-op .p-overlaypanel-content {
+  padding: 14px 14px 10px;
+  width: 240px;
+}
+
+.mrs-op__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mrs-op__meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.mrs-op__name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mrs-op__sub {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.mrs-op__actions {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+/* =========================
+   Responsive breakpoints
+   ========================= */
+
+/* จอเริ่มแคบ: จำกัดข้อความในเมนู+ชื่อ user */
+@media (max-width: 960px) {
+  .mrs-menuItem {
+    max-width: 190px;
+  }
+  .mrs-userChip__name {
+    max-width: 140px;
+  }
+}
+
+/* จอแคบลง: เมนูเหลือแค่ไอคอน + ซ่อนเส้นแบ่ง */
+@media (max-width: 820px) {
+  .mrs-title {
+    max-width: 260px;
+  }
+
+  .mrs-menuItem span {
+    display: none;
+  }
+  .mrs-menuItem {
+    padding: 8px 10px;
+    max-width: none;
+  }
+  .mrs-vline {
+    display: none;
+  }
+}
+
+/* จอเล็กมาก: ซ่อนเมนูกลาง เหลือซ้าย+ขวา */
+@media (max-width: 680px) {
+  .mrs-center {
+    display: none;
+  }
+
+  .mrs-nav__card {
+    height: 60px;
+  }
+
+  .mrs-left {
+    min-width: 140px;
+  }
+
+  .mrs-userChip__name {
+    display: none;
+  }
+}
