@@ -1,33 +1,28 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import axios from "axios";
 
 const AuthContext = createContext(null);
 
 export default function AuthProvider({ children }) {
-  const [token, setToken_] = useState(localStorage.getItem("token"));
-  const [refreshToken, setRefreshToken_] = useState(localStorage.getItem("refreshToken"));
-  const [name, setName_] = useState(localStorage.getItem("name"));
-  const [userType, setUserType_] = useState(localStorage.getItem("userType"));
-  const [coop, setCoop_] = useState(localStorage.getItem("coop-msc-milk-supply-chain"));
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [refreshToken, setRefreshToken] = useState(localStorage.getItem("refreshToken"));
+  const [name, setName] = useState(localStorage.getItem("name"));
+  const [userType, setUserType] = useState(localStorage.getItem("userType"));
+  const [coop, setCoopState] = useState(localStorage.getItem("coop-msc-milk-supply-chain") || "[]");
+  const apiUrl = import.meta.env.VITE_API_URL;
 
-  const setToken = (v) => setToken_(v);
-  const setRefreshToken = (v) => setRefreshToken_(v);
-  const setName = (v) => setName_(v);
-  const setUserType = (v) => setUserType_(v);
-
-  const setCoop = (coopList) => {
-    setCoop_(JSON.stringify(coopList ?? []));
-  };
+  const setCoop = (coopList) => setCoopState(JSON.stringify(coopList ?? []));
 
   const logout = () => {
-    setToken_(null);
-    setRefreshToken_(null);
-    setName_(null);
-    setUserType_(null);
-    setCoop_(null);
-
+    setToken(null);
+    setRefreshToken(null);
+    setName(null);
+    setUserType(null);
+    setCoopState("[]");
     localStorage.clear();
   };
 
+  // persist
   useEffect(() => {
     if (token) {
       localStorage.setItem("token", token);
@@ -43,6 +38,40 @@ export default function AuthProvider({ children }) {
       localStorage.removeItem("coop-msc-milk-supply-chain");
     }
   }, [token, refreshToken, name, userType, coop]);
+
+  useEffect(() => {
+    const handleOffline = () => logout();
+    window.addEventListener("offline", handleOffline);
+    return () => window.removeEventListener("offline", handleOffline);
+  }, []);
+
+  // (แนะนำ) ถ้ามี token ให้ ping เว็บหลักซัก endpoint เพื่อยืนยันว่าใช้งานได้จริง
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!token) return;
+      if (!navigator.onLine) {
+        Swal.fire({
+          icon: "warning",
+          title: "ไม่มีอินเทอร์เน็ต",
+          text: "ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อเข้าสู่ระบบ",
+          confirmButtonText: "ตกลง",
+        });
+        return;
+      }
+
+      try {
+        await axios.get(`${apiUrl}/authen/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 8000,
+        });
+      } catch {
+        // token หมดอายุ/ติดต่อไม่ได้ -> กลับไป login
+        logout();
+      }
+    };
+    checkSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const value = useMemo(
     () => ({

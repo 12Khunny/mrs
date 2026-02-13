@@ -14,68 +14,78 @@ export default function LoginPage() {
   const path = apiUrl + "/authen/login";
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const logIn = { username, password };
+  e.preventDefault();
+  const logIn = { username, password };
 
-    try {
-      const response = await axios.post(path, logIn);
-      const { access_token, refresh_token, name, user_type, coop_list } = response.data;
+  // ✅ จุดที่ 1
+  if (!navigator.onLine) {
+    Swal.fire({
+      title: "ไม่มีอินเทอร์เน็ต",
+      icon: "warning",
+      text: "ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อเข้าสู่ระบบ",
+      confirmButtonText: "ตกลง",
+      confirmButtonColor: "#03A14C",
+    });
+    return;
+  }
 
-      setToken(access_token);        
-      setRefreshToken(refresh_token);
-      setName(name);
-      setUserType(user_type);
-      setCoop(coop_list);
+  try {
+    const response = await axios.post(path, logIn);
 
-      if (response.status === 200) {
-        navigate("/", { replace: true });
-        Swal.fire({
-          title: "สำเร็จ",
-          icon: "success",
-          confirmButtonText: "ตกลง",
-          confirmButtonColor: "#03A14C",
-          timer: 1000,
-        });
-      } else {
-        Swal.fire({
-          title: "ไม่สำเร็จ",
-          icon: "error",
-          text: "ชื่อผู้ใช้ หรือ รหัสผ่านไม่ถูกต้อง",
-          confirmButtonText: "ตกลง",
-          confirmButtonColor: "#03A14C",
-        });
-      }
-    } catch (error) {
-      if (error.message === "Network Error") {
-        Swal.fire({
-          title: "Network Error",
-          icon: "error",
-          text: "error",
-          confirmButtonText: "ตกลง",
-          confirmButtonColor: "#03A14C",
-        });
-      } else {
-        const errorStatus = error?.response?.status;
-        if (errorStatus === 400) {
-          Swal.fire({
-            title: "ไม่สำเร็จ",
-            icon: "error",
-            text: "ชื่อผู้ใช้ หรือ รหัสผ่านไม่ถูกต้อง",
-            confirmButtonText: "ตกลง",
-            confirmButtonColor: "#03A14C",
-          });
-        } else {
-          Swal.fire({
-            title: "ไม่สำเร็จ",
-            icon: "error",
-            text: "error",
-            confirmButtonText: "ตกลง",
-            confirmButtonColor: "#03A14C",
-          });
-        }
-      }
+    const { access_token, refresh_token, name, user_type, coop_list } = response.data;
+
+    setToken(access_token);
+    setRefreshToken(refresh_token);
+    setName(name);
+    setUserType(user_type);
+    setCoop(coop_list);
+
+    navigate("/", { replace: true });
+
+    Swal.fire({
+      title: "สำเร็จ",
+      icon: "success",
+      confirmButtonText: "ตกลง",
+      confirmButtonColor: "#03A14C",
+      timer: 1000,
+    });
+
+  } catch (error) {
+
+    // ✅ จุดที่ 2
+    if (!navigator.onLine || error.message === "Network Error") {
+      Swal.fire({
+        title: "ไม่มีอินเทอร์เน็ต",
+        icon: "warning",
+        text: "ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อเข้าสู่ระบบ",
+        confirmButtonText: "ตกลง",
+        confirmButtonColor: "#03A14C",
+      });
+      return;
     }
-  };
+
+    const errorStatus = error?.response?.status;
+
+    if (errorStatus === 400 || errorStatus === 401) {
+      Swal.fire({
+        title: "ไม่สำเร็จ",
+        icon: "error",
+        text: "ชื่อผู้ใช้ หรือ รหัสผ่านไม่ถูกต้อง",
+        confirmButtonText: "ตกลง",
+        confirmButtonColor: "#03A14C",
+      });
+    } else {
+      Swal.fire({
+        title: "เชื่อมต่อระบบไม่ได้",
+        icon: "error",
+        text: "กรุณาลองใหม่อีกครั้ง",
+        confirmButtonText: "ตกลง",
+        confirmButtonColor: "#03A14C",
+      });
+    }
+  }
+};
+
 
   return (
     <div style={{ padding: 24 }}>

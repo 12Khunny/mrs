@@ -1,17 +1,20 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import AuthProvider, { useAuth } from "./providers/authProvider";
 import LoginPage from "./pages/auth/Login";
 import Navbar from "./components/Navbar";
+import TruckWeighingManual from "./pages/truckWeighing/Manual";
 
-function ProtectedLayout({ children }) {
+function ProtectedLayout() {
   const { token } = useAuth();
 
+  // ✅ ออนไลน์เท่านั้น
+  if (!navigator.onLine) return <Navigate to="/login" replace />;
   if (!token) return <Navigate to="/login" replace />;
 
   return (
     <>
-      <Navbar />   {/* ⭐ Navbar อยู่ตรงนี้ */}
-      {children}
+      <Navbar />
+      <Outlet />
     </>
   );
 }
@@ -25,22 +28,22 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-
           {/* หน้า login ไม่มี navbar */}
           <Route path="/login" element={<LoginPage />} />
 
-          {/* ทุกหน้าหลัง login จะมี navbar */}
-          <Route
-            path="/"
-            element={
-              <ProtectedLayout>
-                <Home />
-              </ProtectedLayout>
-            }
-          />
+          {/* ทุกหน้าหลัง login */}
+          <Route element={<ProtectedLayout />}>
+            <Route path="/" element={<Home />} />
 
+            {/* ✅ path แบบเว็บหลัก */}
+            <Route
+              path="/truck-weighing/manual"
+              element={<TruckWeighingManual />}
+            />
+          </Route>
+
+          {/* กันพิมพ์ path แปลกๆ */}
           <Route path="*" element={<Navigate to="/" replace />} />
-
         </Routes>
       </BrowserRouter>
     </AuthProvider>

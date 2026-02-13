@@ -4,7 +4,6 @@ import Swal from "sweetalert2";
 
 import { OverlayPanel } from "primereact/overlaypanel";
 import { Button } from "primereact/button";
-import { Avatar } from "primereact/avatar";
 import { Divider } from "primereact/divider";
 
 import { useAuth } from "../providers/authProvider";
@@ -15,19 +14,13 @@ export default function Navbar() {
   const { name, logout } = useAuth();
   const op = useRef(null);
 
-  const initials = (name || "User")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase())
-    .join("");
-
+  // ✅ path ให้เหมือนเว็บหลัก
   const menus = useMemo(
     () => [
-      { label: "บันทึกการชั่งน้ำหนัก", to: "/weight", icon: "pi pi-pencil" },
+      { label: "บันทึกการชั่งน้ำหนัก", to: "/truck-weighing", icon: "pi pi-pencil" },
       {
         label: "บันทึกการชั่งน้ำหนักแบบ Manual",
-        to: "/weight-manual",
+        to: "/truck-weighing/manual",
         icon: "pi pi-pencil",
       },
     ],
