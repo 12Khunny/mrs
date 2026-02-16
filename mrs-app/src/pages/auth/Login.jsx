@@ -1,100 +1,91 @@
-import React, { useState } from "react";
+import { Box, TextField, Button, Paper, Typography } from "@mui/material";
+import { useState } from "react";
 import axios from "axios";
-import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../providers/authProvider";
+import { useToast } from "../../providers/toastProvider";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { setToken, setRefreshToken, setName, setUserType, setCoop } = useAuth();
+  const { setToken } = useAuth();
+  const { showToast } = useToast();
 
   const apiUrl = import.meta.env.VITE_API_URL;
-  const path = apiUrl + "/authen/login";
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  const logIn = { username, password };
+    e.preventDefault();
 
-  // ✅ จุดที่ 1
-  if (!navigator.onLine) {
-    Swal.fire({
-      title: "ไม่มีอินเทอร์เน็ต",
-      icon: "warning",
-      text: "ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อเข้าสู่ระบบ",
-      confirmButtonText: "ตกลง",
-      confirmButtonColor: "#03A14C",
-    });
-    return;
-  }
-
-  try {
-    const response = await axios.post(path, logIn);
-
-    const { access_token, refresh_token, name, user_type, coop_list } = response.data;
-
-    setToken(access_token);
-    setRefreshToken(refresh_token);
-    setName(name);
-    setUserType(user_type);
-    setCoop(coop_list);
-
-    navigate("/", { replace: true });
-
-    Swal.fire({
-      title: "สำเร็จ",
-      icon: "success",
-      confirmButtonText: "ตกลง",
-      confirmButtonColor: "#03A14C",
-      timer: 1000,
-    });
-
-  } catch (error) {
-
-    // ✅ จุดที่ 2
-    if (!navigator.onLine || error.message === "Network Error") {
-      Swal.fire({
-        title: "ไม่มีอินเทอร์เน็ต",
-        icon: "warning",
-        text: "ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อเข้าสู่ระบบ",
-        confirmButtonText: "ตกลง",
-        confirmButtonColor: "#03A14C",
-      });
+    if (!navigator.onLine) {
+      showToast("ไม่มีอินเทอร์เน็ต: ต้องเชื่อมต่อเพื่อเข้าสู่ระบบ", "warning");
       return;
     }
 
-    const errorStatus = error?.response?.status;
+    try {
+      const res = await axios.post(`${apiUrl}/authen/login`, {
+        username,
+        password,
+      });
 
-    if (errorStatus === 400 || errorStatus === 401) {
-      Swal.fire({
-        title: "ไม่สำเร็จ",
-        icon: "error",
-        text: "ชื่อผู้ใช้ หรือ รหัสผ่านไม่ถูกต้อง",
-        confirmButtonText: "ตกลง",
-        confirmButtonColor: "#03A14C",
-      });
-    } else {
-      Swal.fire({
-        title: "เชื่อมต่อระบบไม่ได้",
-        icon: "error",
-        text: "กรุณาลองใหม่อีกครั้ง",
-        confirmButtonText: "ตกลง",
-        confirmButtonColor: "#03A14C",
-      });
+      setToken(res.data.access_token);
+
+      showToast("เข้าสู่ระบบสำเร็จ", "success");
+      navigate("/truckWeighing/Auto", { replace: true });
+
+    } catch (err) {
+      // ถ้าเน็ตหลุดระหว่างทาง/ติดต่อไม่ได้
+      if (!navigator.onLine || err?.message === "Network Error") {
+        showToast("เชื่อมต่อไม่ได้: กรุณาตรวจสอบอินเทอร์เน็ต", "warning");
+        return;
+      }
+
+      // ถ้า server ตอบ 400/401
+      const status = err?.response?.status;
+      if (status === 400 || status === 401) {
+        showToast("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง", "error");
+        return;
+      }
+
+      showToast("เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่", "error");
     }
-  }
-};
-
+  };
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2>MRS Login</h2>
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, maxWidth: 320 }}>
-        <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="username" />
-        <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" type="password" />
-        <button type="submit">Login</button>
-      </form>
-    </div>
+    <Box
+      sx={{
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <Paper sx={{ p: 4, width: 350 }}>
+        <Typography variant="h6" mb={2}>
+          Login
+        </Typography>
+
+        <form onSubmit={handleSubmit}>
+          <TextField
+            label="Username"
+            fullWidth
+            margin="normal"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <TextField
+            label="Password"
+            type="password"
+            fullWidth
+            margin="normal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button variant="contained" fullWidth sx={{ mt: 2 }} type="submit">
+            Login
+          </Button>
+        </form>
+      </Paper>
+    </Box>
   );
 }

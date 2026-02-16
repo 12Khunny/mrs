@@ -1,117 +1,145 @@
-import React, { useMemo, useRef } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
-
-import { OverlayPanel } from "primereact/overlaypanel";
-import { Button } from "primereact/button";
-import { Divider } from "primereact/divider";
-
+import React from "react";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Tabs,
+  Tab,
+  Box,
+  IconButton,
+  Avatar,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from "@mui/material";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../providers/authProvider";
-import "./Navbar.css";
+import { useToast } from "../providers/toastProvider";
+
+const routes = [
+  { label: "บันทึกการชั่งน้ำหนัก", path: "/truckWeighing/Auto" },
+  { label: "บันทึกการชั่งน้ำหนักแบบ Manual", path: "/truckWeighing/Manual" },
+];
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { name, logout } = useAuth();
-  const op = useRef(null);
+  const { showToast } = useToast();
 
-  // ✅ path ให้เหมือนเว็บหลัก
-  const menus = useMemo(
-    () => [
-      { label: "บันทึกการชั่งน้ำหนัก", to: "/truck-weighing", icon: "pi pi-pencil" },
-      {
-        label: "บันทึกการชั่งน้ำหนักแบบ Manual",
-        to: "/truck-weighing/manual",
-        icon: "pi pi-pencil",
-      },
-    ],
-    []
-  );
+  const currentTab = React.useMemo(() => {
+    const p = location.pathname;
 
-  const handleLogout = async () => {
-    op.current?.hide();
+    const best = routes
+      .map((r, idx) => ({ ...r, idx }))
+      .filter((r) => p === r.path || p.startsWith(r.path + "/"))
+      .sort((a, b) => b.path.length - a.path.length)[0];
 
-    const result = await Swal.fire({
-      title: "ต้องการออกจากระบบใช่ไหม?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "ออกจากระบบ",
-      cancelButtonText: "ยกเลิก",
-      confirmButtonColor: "#d33",
-      reverseButtons: true,
-    });
+    return best ? best.idx : false;
+  }, [location.pathname]);
 
-    if (result.isConfirmed) {
-      logout();
-      navigate("/login", { replace: true });
-    }
+  const [anchorEl, setAnchorEl] = React.useState(null);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+
+  const openMenu = (e) => setAnchorEl(e.currentTarget);
+  const closeMenu = () => setAnchorEl(null);
+
+  const handleClickLogout = () => {
+    closeMenu();
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setConfirmOpen(false);
+    logout();
+    showToast("ออกจากระบบแล้ว", "info");
+    navigate("/login", { replace: true });
   };
 
   return (
-    <header className="mrs-nav">
-      <div className="mrs-nav__card">
-        {/* LEFT */}
-        <div className="mrs-left" onClick={() => navigate("/")}>
-          <i className="pi pi-home mrs-home" />
-          <div className="mrs-title" title="RFID - Milk Receiving System for MSC">
-            RFID - Milk Receiving System for MSC
-          </div>
-        </div>
-
-        {/* CENTER */}
-        <nav className="mrs-center" aria-label="Main navigation">
-          {menus.map((m, idx) => (
-            <React.Fragment key={m.to}>
-              <NavLink
-                to={m.to}
-                className={({ isActive }) =>
-                  `mrs-menuItem ${isActive ? "is-active" : ""}`
-                }
-              >
-                <i className={m.icon} />
-                <span>{m.label}</span>
-              </NavLink>
-
-              {idx !== menus.length - 1 && <span className="mrs-vline" />}
-            </React.Fragment>
-          ))}
-        </nav>
-
-        {/* RIGHT */}
-        <div className="mrs-right">
-          <button
-            className="mrs-userChip"
-            onClick={(e) => op.current?.toggle(e)}
-            type="button"
-            aria-label="User menu"
+    <>
+      <AppBar position="sticky" color="default" elevation={1}>
+        <Toolbar sx={{ gap: 2 }}>
+          {/* LEFT */}
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 800, cursor: "default", whiteSpace: "nowrap", userSelect: "none" }}
           >
-            <span className="mrs-userChip__icon">
-              <i className="pi pi-user" />
-            </span>
-          </button>
+            MRS
+          </Typography>
 
-          <OverlayPanel ref={op} className="mrs-op" dismissable>
-            <div className="mrs-op__head">
-              <div className="mrs-op__meta">
-                <div className="mrs-op__name">{name || "User"}</div>
-                <div className="mrs-op__sub">Signed in</div>
-              </div>
-            </div>
-
-            <Divider />
-
-            <div className="mrs-op__actions">
-              <Button
-                label="ออกจากระบบ"
-                icon="pi pi-sign-out"
-                severity="danger"
-                text
-                className="w-full justify-content-start"
-                onClick={handleLogout}
+          {/* CENTER */}
+          <Tabs
+            value={currentTab}
+            onChange={(e, val) => navigate(routes[val].path)}
+            textColor="primary"
+            indicatorColor="primary"
+            sx={{ flexGrow: 1, minHeight: 48 }}
+          >
+            {routes.map((r) => (
+              <Tab
+                key={r.path}
+                label={r.label}
+                sx={{ minHeight: 48, textTransform: "none" }}
               />
-            </div>
-          </OverlayPanel>
-        </div>
-      </div>
-    </header>
+            ))}
+          </Tabs>
+
+          {/* RIGHT */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                maxWidth: 220,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              title={name || "User"}
+            >
+              {name || "User"}
+            </Typography>
+
+            <IconButton onClick={openMenu} size="small" aria-label="user menu">
+              <Avatar sx={{ width: 34, height: 34 }}>
+                <AccountCircleIcon />
+              </Avatar>
+            </IconButton>
+
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={closeMenu}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+              <MenuItem onClick={handleClickLogout}>Logout</MenuItem>
+            </Menu>
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      {/* ✅ Confirm Logout Dialog */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>ยืนยันการออกจากระบบ</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            คุณต้องการออกจากระบบใช่หรือไม่?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>ยกเลิก</Button>
+          <Button variant="contained" color="error" onClick={handleConfirmLogout}>
+            ออกจากระบบ
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }

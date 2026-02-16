@@ -1,17 +1,19 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import App from "./App";
+import { ToastProvider } from "./providers/toastProvider";
 
-// PrimeReact css
-import 'primeflex/primeflex.css'
-import 'primeicons/primeicons.css'
-import 'primereact/resources/themes/lara-light-indigo/theme.css'
-import 'primereact/resources/primereact.min.css'
+const theme = createTheme({
+  palette: { primary: { main: "#1976d2" } },
+});
 
-import App from './App.jsx'
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+createRoot(document.getElementById("root")).render(
+  <ThemeProvider theme={theme}>
+    <CssBaseline />
+    <ToastProvider>
+      <App />
+    </ToastProvider>
+  </ThemeProvider>
+);

@@ -2,6 +2,6 @@
   width: 100%;
   min-height: 100vh;
   margin: 0;
-  padding: 0;          /* สำคัญ: เอา 2rem ออก */
-  text-align: left;    /* สำคัญ: ไม่ต้อง center ทั้งแอป */
+  padding: 0;
+  text-align: left;
 }
