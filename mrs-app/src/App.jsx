@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom
 import AuthProvider, { useAuth } from "./providers/authProvider";
 import LoginPage from "./pages/auth/Login";
 import Navbar from "./components/Navbar";
+
 import TruckWeighingAuto from "./pages/truckWeighing/Auto";
 import TruckWeighingManual from "./pages/truckWeighing/Manual";
 

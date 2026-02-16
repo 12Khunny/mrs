@@ -90,7 +90,11 @@ export default function AuthProvider({ children }) {
     [token, refreshToken, name, userType, coop]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
