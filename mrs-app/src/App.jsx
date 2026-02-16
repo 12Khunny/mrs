@@ -2,9 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom
 import AuthProvider, { useAuth } from "./providers/authProvider";
 import LoginPage from "./pages/auth/Login";
 import Navbar from "./components/Navbar";
-
 import TruckWeighingAuto from "./pages/truckWeighing/Auto";
-import TruckWeighingManual from "./pages/truckWeighing/Manual";
+import TruckWeighingManual from "./pages/truckWeighing/Manual/Record.jsx";
 
 function ProtectedLayout() {
   const { token } = useAuth();
@@ -40,7 +39,7 @@ export default function App() {
               element={<TruckWeighingAuto/>}
             />
             <Route
-              path="/truckWeighing/Manual"
+              path="/truckWeighing/Manual/Record"
               element={<TruckWeighingManual/>}
             />
           </Route>
