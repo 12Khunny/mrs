@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import Swal from "sweetalert2";
 import {
   Container,
   Paper,
@@ -11,7 +12,6 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import Swal from "sweetalert2";
 import { useAuth } from "../../../providers/authProvider";
 import { useNavigate } from "react-router-dom";
 
@@ -24,15 +24,13 @@ export default function TruckWeighingManual() {
   const [truckList, setTruckList] = useState([]);
   const [selectedTruck, setSelectedTruck] = useState(null);
 
-  const headers = useMemo(
-    () => ({ Authorization: `Bearer ${token}` }),
-    [token]
-  );
+  const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
   useEffect(() => {
     const fetchInit = async () => {
       setLoading(true);
       try {
+        // ใช้ detail เพื่อดึง truck_list เหมือนที่คุณทำอยู่
         const res = await axios.get(`${apiUrl}/loadedTruck/loadedTruckDetail`, { headers });
         setTruckList(res.data?.truck_list ?? []);
       } catch (e) {
@@ -49,12 +47,73 @@ export default function TruckWeighingManual() {
     if (token) fetchInit();
   }, [apiUrl, headers, token]);
 
-  const onConfirm = () => {
+  const onConfirm = async () => {
     if (!selectedTruck) return;
 
-    // ✅ ทางเลือก A: อยู่หน้าเดิมแล้วค่อยแสดงฟอร์มต่อ (stepper) — เราจะทำต่อขั้นถัดไปได้
-    // ✅ ทางเลือก B: ไปหน้า record แยก route พร้อม state เหมือนเว็บหลัก
-    navigate("/truck-weighing/manual/record", { state: { truck: selectedTruck } });
+    try {
+      // 1) ดึง list รายการชั่งเข้า
+      const listRes = await axios.get(`${apiUrl}/loadedTruck/loadedTruckList`, { headers });
+      const list = Array.isArray(listRes.data) ? listRes.data : [];
+
+      // 2) กรองตาม truck_id (ชัวร์กว่า truck_license)
+      const sameTruck = list.filter((x) => x?.truck_id === selectedTruck?.truck_id);
+
+      // ไม่เคยมีรายการเลย -> ไปหน้า ชั่งเข้า (เริ่มใหม่)
+      if (sameTruck.length === 0) {
+        navigate("/truck-weighing/manual/loaded", { state: { truck: selectedTruck } });
+        return;
+      }
+
+      // 3) หา “รายการล่าสุด” (ใช้ id มากสุด)
+      const latest = sameTruck.reduce(
+        (best, cur) => ((cur?.id || 0) > (best?.id || 0) ? cur : best),
+        sameTruck[0]
+      );
+
+      // 4) เช็คว่ารายการล่าสุดมี unloaded หรือยัง (ใช้ endpoint ที่คุณจับได้)
+      const detailRes = await axios.get(
+        `${apiUrl}/unloadedTruck/unloadedTruckDetail/${latest.id}`,
+        { headers }
+      );
+
+      const t = detailRes.data?.content ?? detailRes.data?.detail ?? detailRes.data;
+
+      const hasLoaded = !!t?.truck_loaded_weight;
+      const hasUnloaded = !!t?.truck_unloaded_weight;
+
+      if (hasLoaded && !hasUnloaded) {
+        const r = await Swal.fire({
+          title: "พบรายการค้าง",
+          html: `
+            ทะเบียน <b>${selectedTruck.truck_license}</b> มีการชั่งเข้าแล้ว<br/>
+            ต้องการไปบันทึก <b>ชั่งรถเปล่า</b> ของรายการเดิมหรือไม่?
+          `,
+          icon: "info",
+          showCancelButton: true,
+          confirmButtonText: "ตกลง",
+          cancelButtonText: "ยกเลิก",
+          reverseButtons: true,
+        });
+
+        if (r.isConfirmed) {
+          navigate(`/truck-weighing/manual/unloaded/${latest.id}`, {
+            state: { truck: selectedTruck },
+          });
+        }
+        return;
+      }
+
+      // ถ้ารายการล่าสุดครบแล้ว -> เริ่มใหม่ไปหน้า ชั่งเข้า
+      navigate("/truck-weighing/manual/loaded", { state: { truck: selectedTruck } });
+    } catch (e) {
+      console.error(e);
+      Swal.fire({
+        title: "ตรวจสอบรายการล่าสุดไม่สำเร็จ",
+        text: "โปรดลองใหม่อีกครั้ง",
+        icon: "error",
+        confirmButtonText: "ตกลง",
+      });
+    }
   };
 
   if (!navigator.onLine) {
@@ -100,8 +159,7 @@ export default function TruckWeighingManual() {
               <Box sx={{ mt: 2 }}>
                 <Alert severity="info">
                   เลือก: <b>{selectedTruck.truck_license}</b> | เจ้าของ:{" "}
-                  <b>{selectedTruck.owner}</b> | จำนวนช่อง:{" "}
-                  <b>{selectedTruck.number_channel}</b>
+                  <b>{selectedTruck.owner}</b> | จำนวนช่อง: <b>{selectedTruck.number_channel}</b>
                 </Alert>
               </Box>
             )}
