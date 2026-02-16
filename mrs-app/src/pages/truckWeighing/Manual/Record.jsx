@@ -11,6 +11,7 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
+import Swal from "sweetalert2";
 import { useAuth } from "../../../providers/authProvider";
 import { useNavigate } from "react-router-dom";
 
