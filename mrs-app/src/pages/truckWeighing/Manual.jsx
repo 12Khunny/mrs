@@ -12,11 +12,11 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { useAuth } from "../../../providers/authProvider";
+import { useAuth } from "../../providers/authProvider";
 import { useNavigate } from "react-router-dom";
 
 export default function TruckWeighingManual() {
-  const apiUrl = import.meta.env.VITE_API_URL; // เช่น https://api.zyanwoa.com/__testapi2__
+  const apiUrl = import.meta.env.VITE_API_URL;
   const { token } = useAuth();
   const navigate = useNavigate();
 
@@ -60,7 +60,7 @@ export default function TruckWeighingManual() {
 
       // ไม่เคยมีรายการเลย -> ไปหน้า ชั่งเข้า (เริ่มใหม่)
       if (sameTruck.length === 0) {
-        navigate("/truck-weighing/manual/loaded", { state: { truck: selectedTruck } });
+        navigate("/truckWeighing/Manual", { state: { truck: selectedTruck } });
         return;
       }
 
@@ -96,7 +96,7 @@ export default function TruckWeighingManual() {
         });
 
         if (r.isConfirmed) {
-          navigate(`/truck-weighing/manual/unloaded/${latest.id}`, {
+          navigate(`/truckWeighing/Unloaded/${latest.id}`, {
             state: { truck: selectedTruck },
           });
         }
@@ -104,7 +104,7 @@ export default function TruckWeighingManual() {
       }
 
       // ถ้ารายการล่าสุดครบแล้ว -> เริ่มใหม่ไปหน้า ชั่งเข้า
-      navigate("/truck-weighing/manual/loaded", { state: { truck: selectedTruck } });
+      navigate("/truckWeighing/Loaded", { state: { truck: selectedTruck } });
     } catch (e) {
       console.error(e);
       Swal.fire({

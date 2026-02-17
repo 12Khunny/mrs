@@ -12,7 +12,7 @@ export default function TruckWeighingManualLoaded() {
         <Alert severity="warning">
           ไม่พบข้อมูลรถที่เลือก กรุณากลับไปหน้าเลือกทะเบียน
           <Box sx={{ mt: 2 }}>
-            <Button variant="contained" onClick={() => navigate("/truck-weighing/manual")}>
+            <Button variant="contained" onClick={() => navigate("/truckWeighing/Manual")}>
               กลับไปหน้าเลือกทะเบียน
             </Button>
           </Box>
@@ -36,7 +36,7 @@ export default function TruckWeighingManualLoaded() {
         </Box>
 
         <Box sx={{ mt: 3, display: "flex", gap: 1 }}>
-          <Button variant="outlined" onClick={() => navigate("/truck-weighing/manual")}>
+          <Button variant="outlined" onClick={() => navigate("/truckWeighing/Manual")}>
             เปลี่ยนทะเบียน
           </Button>
           {/* ปุ่มบันทึกจริงจะทำขั้นต่อไป */}

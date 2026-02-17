@@ -24,7 +24,7 @@ import { useToast } from "../providers/toastProvider";
 
 const routes = [
   { label: "บันทึกการชั่งน้ำหนัก", path: "/truckWeighing/Auto" },
-  { label: "บันทึกการชั่งน้ำหนักแบบ Manual", path: "/truckWeighing/Manual/Record" },
+  { label: "บันทึกการชั่งน้ำหนักแบบ Manual", path: "/truckWeighing/Manual" },
 ];
 
 export default function Navbar() {

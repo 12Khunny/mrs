@@ -3,9 +3,9 @@ import AuthProvider, { useAuth } from "./providers/authProvider";
 import LoginPage from "./pages/auth/Login";
 import Navbar from "./components/Navbar";
 import TruckWeighingAuto from "./pages/truckWeighing/Auto";
-import TruckWeighingManual from "./pages/truckWeighing/Manual/Record";
-import TruckWeighingLoaded from "./pages/truckWeighing/WeighingList/Loaded";
-import TruckWeighingUnloaded from "./pages/truckWeighing/WeighingList/Unloaded";
+import TruckWeighingManual from "./pages/truckWeighing/Manual";
+import TruckWeighingLoaded from "./pages/truckWeighing/Loaded";
+import TruckWeighingUnloaded from "./pages/truckWeighing/Unloaded";
 
 function ProtectedLayout() {
   const { token } = useAuth();
@@ -41,13 +41,10 @@ export default function App() {
               element={<TruckWeighingAuto/>}
             />
             <Route
-              path="/truckWeighing/Manual/Record"
+              path="/truckWeighing/Manual"
               element={<TruckWeighingManual/>}
             />
 
-            <Route path="/truck-weighing/manual" element={<TruckWeighingManual />} />
-            <Route path="/truck-weighing/manual/loaded" element={<TruckWeighingLoaded />} />
-            <Route path="/truck-weighing/manual/unloaded/:id" element={<TruckWeighingUnloaded />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

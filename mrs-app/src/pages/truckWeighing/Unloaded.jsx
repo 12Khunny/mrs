@@ -9,10 +9,10 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { useAuth } from "../../../providers/authProvider";
+import { useAuth } from "../../providers/authProvider";
 import { useNavigate, useParams } from "react-router-dom";
 
-export default function TruckWeighingManualUnloaded() {
+export default function TruckWeighingUnloaded() {
   const apiUrl = import.meta.env.VITE_API_URL;
   const { token } = useAuth();
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -86,7 +86,7 @@ export default function TruckWeighingManualUnloaded() {
             </Alert>
 
             <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
-              <Button variant="outlined" onClick={() => navigate("/truck-weighing/manual")}>
+              <Button variant="outlined" onClick={() => navigate("/truckWeighing/Manual")}>
                 กลับไปเลือกทะเบียน
               </Button>
 
