@@ -31,7 +31,8 @@ const routes = [
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { name, logout } = useAuth();
+
+  const { username, name, logout } = useAuth(); // ✅ เพิ่ม username
   const { showToast } = useToast();
 
   const currentTab = React.useMemo(() => {
@@ -41,7 +42,7 @@ export default function Navbar() {
       .filter((r) => p === r.path || p.startsWith(r.path + "/"))
       .sort((a, b) => b.path.length - a.path.length)[0];
 
-    return best ? best.idx : false;
+    return best ? best.idx : 0; // ✅ default
   }, [location.pathname]);
 
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -66,14 +67,11 @@ export default function Navbar() {
     <>
       <AppBar position="sticky" color="default" elevation={1}>
         <Toolbar sx={{ gap: 2 }}>
-          
           {/* LEFT */}
-          <Box
-            sx={{ display: "flex", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
+          <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
             <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: 0.4 }}>
               MRS
             </Typography>
-
           </Box>
 
           {/* CENTER */}
@@ -91,43 +89,43 @@ export default function Navbar() {
 
           {/* RIGHT */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {/* <Typography variant="body2" sx={{
-                maxWidth: 220,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-              title={name || "User"}
-            >
-              {name || "User"}
-            </Typography> */}
-
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              {name || "-"}
+            </Typography> 
+            
             <IconButton color="inherit" onClick={openMenu}>
               <AccountCircleIcon />
-            </IconButton>   
+            </IconButton>
 
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={closeMenu}>
-              {/* <MenuItem disabled>{name || "Profile"}</MenuItem> */}
+              <MenuItem disabled sx={{ fontWeight: 800, letterSpacing: 0.4 }}>
+                <Box sx={{ lineHeight: 2 }}>
+                  <Typography variant="h8" sx={{ opacity: 1 }}>
+                    {username || "-"}
+                  </Typography>
+                  {/* <Typography variant="body2" sx={{ opacity: 1 }}>
+                    {name || "-"}
+                  </Typography> */}
+                </Box>
+              </MenuItem>
+
               <MenuItem onClick={handleClickLogout}>Logout</MenuItem>
             </Menu>
-            
           </Box>
         </Toolbar>
       </AppBar>
 
-      {/* ✅ Confirm Logout Dialog */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <DialogTitle>ยืนยันการออกจากระบบ</DialogTitle>
-
         <DialogContent>
           <DialogContentText>คุณต้องการออกจากระบบใช่หรือไม่?</DialogContentText>
         </DialogContent>
-
         <DialogActions>
           <Button onClick={() => setConfirmOpen(false)}>ยกเลิก</Button>
-          <Button variant="contained" color="error" onClick={handleConfirmLogout}>ออกจากระบบ</Button>
+          <Button variant="contained" color="error" onClick={handleConfirmLogout}>
+            ออกจากระบบ
+          </Button>
         </DialogActions>
-
       </Dialog>
     </>
   );

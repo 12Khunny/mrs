@@ -9,7 +9,8 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { setToken } = useAuth();
+
+  const { login } = useAuth(); // ✅ เปลี่ยนจาก setToken มาใช้ login()
   const { showToast } = useToast();
 
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -28,19 +29,37 @@ export default function LoginPage() {
         password,
       });
 
-      setToken(res.data.access_token);
+      // ✅ รองรับหลายรูปแบบ response
+      const data = res.data || {};
+      const token = data.access_token || data.token || null;
+
+      // ถ้า backend ส่ง user แยก object
+      const userObj = data.user || {};
+
+      const savedUsername = data.username ?? userObj.username ?? username ?? "";
+      const savedName = data.name ?? userObj.name ?? "";
+
+      const savedUserType = data.userType ?? userObj.userType ?? null;
+      const savedCoop = data.coop ?? userObj.coop ?? [];
+
+      // ✅ ใช้ login() ทีเดียวจบ (จะ persist ให้เอง)
+      login({
+        token,
+        refreshToken: data.refresh_token ?? data.refreshToken ?? null,
+        username: savedUsername,
+        name: savedName,
+        userType: savedUserType,
+        coop: savedCoop,
+      });
 
       showToast("เข้าสู่ระบบสำเร็จ", "success");
       navigate("/truckWeighing/Auto", { replace: true });
-
     } catch (err) {
-      // ถ้าเน็ตหลุดระหว่างทาง/ติดต่อไม่ได้
       if (!navigator.onLine || err?.message === "Network Error") {
         showToast("เชื่อมต่อไม่ได้: กรุณาตรวจสอบอินเทอร์เน็ต", "warning");
         return;
       }
 
-      // ถ้า server ตอบ 400/401
       const status = err?.response?.status;
       if (status === 400 || status === 401) {
         showToast("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง", "error");
