@@ -31,19 +31,18 @@ export default function AuthProvider({ children }) {
   const [token, setTokenState] = useState(null);
   const [refreshToken, setRefreshTokenState] = useState(null);
 
-  const [username, setUsernameState] = useState(""); // ✅ เพิ่ม
+  const [username, setUsernameState] = useState("");
   const [name, setNameState] = useState("");
 
   const [userType, setUserTypeState] = useState(null);
   const [coop, setCoopState] = useState([]);
 
-  // ✅ hydrate จาก storage แล้วค่อย set ready
   useEffect(() => {
     const saved = readStorage();
     if (saved?.token) setTokenState(saved.token);
     if (saved?.refreshToken) setRefreshTokenState(saved.refreshToken);
 
-    if (saved?.username) setUsernameState(saved.username); // ✅ เพิ่ม
+    if (saved?.username) setUsernameState(saved.username);
     if (saved?.name) setNameState(saved.name);
 
     if (saved?.userType != null) setUserTypeState(saved.userType);
@@ -87,7 +86,6 @@ export default function AuthProvider({ children }) {
     patchStorage({ coop: v });
   };
 
-  // ✅ helper สำหรับ login ทีเดียวจบ
   const login = ({ token, refreshToken, username, name, userType, coop }) => {
     setTokenState(token ?? null);
     setRefreshTokenState(refreshToken ?? null);
