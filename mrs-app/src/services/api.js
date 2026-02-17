@@ -1,5 +1,12 @@
 import axios from "axios";
 
-export const api = axios.create({
-  baseURL: "http://localhost:3333/api",
-});
+export function createApiClient({ baseURL, token }) {
+  const instance = axios.create({ baseURL });
+
+  instance.interceptors.request.use((config) => {
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  });
+
+  return instance;
+}

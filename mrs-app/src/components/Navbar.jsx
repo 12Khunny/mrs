@@ -91,7 +91,7 @@ export default function Navbar() {
 
           {/* RIGHT */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="body2" sx={{
+            {/* <Typography variant="body2" sx={{
                 maxWidth: 220,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -100,14 +100,14 @@ export default function Navbar() {
               title={name || "User"}
             >
               {name || "User"}
-            </Typography>
+            </Typography> */}
 
             <IconButton color="inherit" onClick={openMenu}>
               <AccountCircleIcon />
             </IconButton>   
 
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={closeMenu}>
-              <MenuItem disabled>{name || "Profile"}</MenuItem>
+              {/* <MenuItem disabled>{name || "Profile"}</MenuItem> */}
               <MenuItem onClick={handleClickLogout}>Logout</MenuItem>
             </Menu>
             
