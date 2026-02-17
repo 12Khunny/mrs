@@ -1,49 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
+// mrs-app/src/pages/truckWeighing/Unloaded.jsx
+import { useMemo, useState } from "react";
 import axios from "axios";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   Container,
   Paper,
   Typography,
   Box,
+  TextField,
   Button,
   Alert,
-  CircularProgress,
 } from "@mui/material";
+
 import { useAuth } from "../../providers/authProvider";
-import { useNavigate, useParams } from "react-router-dom";
+import { useToast } from "../../providers/toastProvider";
 
 export default function TruckWeighingUnloaded() {
   const apiUrl = import.meta.env.VITE_API_URL;
   const { token } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { id } = useParams(); // id ของ transaction เดิม
+
+  const truck = location.state?.truck;
+
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  const navigate = useNavigate();
-  const { id } = useParams();
-
-  const [loading, setLoading] = useState(true);
-  const [detail, setDetail] = useState(null);
-
-  useEffect(() => {
-    const fetchDetail = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get(`${apiUrl}/unloadedTruck/unloadedTruckDetail/${id}`, { headers });
-        const t = res.data?.content ?? res.data?.detail ?? res.data;
-        setDetail(t);
-      } catch (e) {
-        console.error(e);
-        setDetail(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (!navigator.onLine) {
-      setLoading(false);
-      return;
-    }
-    if (token && id) fetchDetail();
-  }, [apiUrl, headers, token, id]);
+  const [unloadedWeight, setUnloadedWeight] = useState("");
 
   if (!navigator.onLine) {
     return (
@@ -53,50 +37,61 @@ export default function TruckWeighingUnloaded() {
     );
   }
 
+  const onSave = async () => {
+    try {
+      // ✅ TODO: endpoint จริงของ “บันทึกชั่งออก” (เดาเป็น /unloadedTruck/save)
+      // โดยส่ง id ของรายการเดิมเพื่อเติมข้อมูลให้ครบ transaction
+      const payload = {
+        id: Number(id),
+        truck_unloaded_weight: unloadedWeight,
+      };
+
+      await axios.post(`${apiUrl}/unloadedTruck/save`, payload, { headers });
+      showToast?.("บันทึกชั่งออก (Unloaded) สำเร็จ", "success");
+
+      navigate("/truckWeighing/Manual", { replace: true });
+    } catch (e) {
+      console.error(e);
+      showToast?.("บันทึกชั่งออกไม่สำเร็จ", "error");
+    }
+  };
+
   return (
     <Container sx={{ mt: 4, mb: 6 }}>
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        <Typography variant="h6" sx={{ fontWeight: 800 }}>
           บันทึกการชั่งน้ำหนักรถเปล่า (Unloaded)
         </Typography>
 
-        {loading ? (
-          <Box sx={{ mt: 3, display: "flex", alignItems: "center", gap: 2 }}>
-            <CircularProgress size={22} />
-            <Typography>กำลังโหลดข้อมูลรายการ...</Typography>
-          </Box>
-        ) : !detail ? (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            โหลดข้อมูลไม่สำเร็จ หรือไม่พบรายการ
+        <Box sx={{ mt: 2 }}>
+          <Alert severity="info">
+            Transaction ID: <b>{id}</b>
+            {truck?.truck_license ? (
+              <>
+                {" "}
+                | ทะเบียน: <b>{truck.truck_license}</b>
+              </>
+            ) : null}
           </Alert>
-        ) : (
-          <Box sx={{ mt: 2, display: "grid", gap: 1 }}>
-            <Alert severity="info">
-              ทะเบียน: <b>{detail.truck_license}</b> | คนขับ: <b>{detail.driver_name}</b>
-            </Alert>
+        </Box>
 
-            <Alert severity="success">
-              ชั่งเข้า: <b>{detail.truck_loaded_weight}</b> ({detail.truck_loaded_date_time_text})
-            </Alert>
+        <Box sx={{ mt: 3, display: "grid", gap: 2, maxWidth: 520 }}>
+          <TextField
+            label="น้ำหนักรถเปล่า (กก.)"
+            value={unloadedWeight}
+            onChange={(e) => setUnloadedWeight(e.target.value)}
+            placeholder="เช่น 8980"
+          />
 
-            <Alert severity={detail.truck_unloaded_weight ? "success" : "warning"}>
-              ชั่งออก:{" "}
-              <b>{detail.truck_unloaded_weight ?? "ยังไม่มีข้อมูล (ต้องบันทึก)"}</b>{" "}
-              {detail.truck_unloaded_date_time_text ? `(${detail.truck_unloaded_date_time_text})` : ""}
-            </Alert>
-
-            <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
-              <Button variant="outlined" onClick={() => navigate("/truckWeighing/Manual")}>
-                กลับไปเลือกทะเบียน
-              </Button>
-
-              {/* ปุ่มบันทึกจริงจะทำขั้นต่อไป */}
-              <Button variant="contained" disabled>
-                บันทึกชั่งรถเปล่า (ยังไม่ใส่ฟอร์ม)
-              </Button>
-            </Box>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button variant="outlined" onClick={() => navigate("/truckWeighing/Manual")}>
+              ย้อนกลับ
+            </Button>
+            <Button variant="contained" color="success" onClick={onSave} disabled={!unloadedWeight}>
+              บันทึก
+            </Button>
           </Box>
-        )}
+        </Box>
       </Paper>
     </Container>
   );

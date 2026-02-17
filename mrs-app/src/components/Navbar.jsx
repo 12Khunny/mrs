@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useNavigate, useLocation } from "react-router-dom";
+
 import { useAuth } from "../providers/authProvider";
 import { useToast } from "../providers/toastProvider";
 
@@ -35,7 +36,6 @@ export default function Navbar() {
 
   const currentTab = React.useMemo(() => {
     const p = location.pathname;
-
     const best = routes
       .map((r, idx) => ({ ...r, idx }))
       .filter((r) => p === r.path || p.startsWith(r.path + "/"))
@@ -58,7 +58,7 @@ export default function Navbar() {
   const handleConfirmLogout = () => {
     setConfirmOpen(false);
     logout();
-    showToast("ออกจากระบบแล้ว", "info");
+    showToast?.("ออกจากระบบแล้ว", "info");
     navigate("/login", { replace: true });
   };
 
@@ -66,36 +66,32 @@ export default function Navbar() {
     <>
       <AppBar position="sticky" color="default" elevation={1}>
         <Toolbar sx={{ gap: 2 }}>
+          
           {/* LEFT */}
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 800, cursor: "default", whiteSpace: "nowrap", userSelect: "none" }}
-          >
-            MRS
-          </Typography>
+          <Box
+            sx={{ display: "flex", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: 0.4 }}>
+              MRS
+            </Typography>
+
+          </Box>
 
           {/* CENTER */}
           <Tabs
             value={currentTab}
-            onChange={(e, val) => navigate(routes[val].path)}
+            onChange={(_, val) => navigate(routes[val].path)}
             textColor="primary"
             indicatorColor="primary"
             sx={{ flexGrow: 1, minHeight: 48 }}
           >
             {routes.map((r) => (
-              <Tab
-                key={r.path}
-                label={r.label}
-                sx={{ minHeight: 48, textTransform: "none" }}
-              />
+              <Tab key={r.path} label={r.label} sx={{ minHeight: 48 }} />
             ))}
           </Tabs>
 
           {/* RIGHT */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography
-              variant="body2"
-              sx={{
+            <Typography variant="body2" sx={{
                 maxWidth: 220,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -106,21 +102,15 @@ export default function Navbar() {
               {name || "User"}
             </Typography>
 
-            <IconButton onClick={openMenu} size="small" aria-label="user menu">
-              <Avatar sx={{ width: 34, height: 34 }}>
-                <AccountCircleIcon />
-              </Avatar>
-            </IconButton>
+            <IconButton color="inherit" onClick={openMenu}>
+              <AccountCircleIcon />
+            </IconButton>   
 
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={closeMenu}
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
-            >
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={closeMenu}>
+              <MenuItem disabled>{name || "Profile"}</MenuItem>
               <MenuItem onClick={handleClickLogout}>Logout</MenuItem>
             </Menu>
+            
           </Box>
         </Toolbar>
       </AppBar>
@@ -128,17 +118,16 @@ export default function Navbar() {
       {/* ✅ Confirm Logout Dialog */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <DialogTitle>ยืนยันการออกจากระบบ</DialogTitle>
+
         <DialogContent>
-          <DialogContentText>
-            คุณต้องการออกจากระบบใช่หรือไม่?
-          </DialogContentText>
+          <DialogContentText>คุณต้องการออกจากระบบใช่หรือไม่?</DialogContentText>
         </DialogContent>
+
         <DialogActions>
           <Button onClick={() => setConfirmOpen(false)}>ยกเลิก</Button>
-          <Button variant="contained" color="error" onClick={handleConfirmLogout}>
-            ออกจากระบบ
-          </Button>
+          <Button variant="contained" color="error" onClick={handleConfirmLogout}>ออกจากระบบ</Button>
         </DialogActions>
+
       </Dialog>
     </>
   );

@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+
 import App from "./App";
 import AuthProvider from "./providers/authProvider";
 import { ToastProvider } from "./providers/toastProvider";
