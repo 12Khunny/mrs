@@ -7,7 +7,6 @@ import {
   Tab,
   Box,
   IconButton,
-  Avatar,
   Menu,
   MenuItem,
   Dialog,
@@ -17,6 +16,7 @@ import {
   DialogActions,
   Button,
 } from "@mui/material";
+
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useNavigate, useLocation } from "react-router-dom";
 
