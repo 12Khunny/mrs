@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Container,
   Paper,
@@ -9,62 +9,138 @@ import {
   Autocomplete,
   Alert,
   CircularProgress,
-  MenuItem,
-  Select,
-  FormControl,
   Table,
   TableHead,
   TableBody,
   TableRow,
   TableCell,
   TableContainer,
-  Switch,
+  Checkbox,
   FormControlLabel,
+  Chip,
+  InputAdornment,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
-import { useLocation } from "react-router-dom";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import ClearIcon from "@mui/icons-material/Clear";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../providers/authProvider";
 import { getLoadedTruckDetail } from "../../services/loadedService";
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
 function toISODate(d = new Date()) {
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
-function toISOTime(d = new Date()) {
+
+function toCurrentTime(d = new Date()) {
   const pad = (n) => String(n).padStart(2, "0");
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// แปลง YYYY-MM-DD → DD เดือนไทย YYYY
+const MONTHS_TH = [
+  "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+  "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
+];
+
+// YYYY-MM-DD → "01 มกราคม 2568" (พ.ศ.)
 function formatDateThai(iso) {
   if (!iso) return "";
-  const months = [
-    "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
-    "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
-  ];
   const [y, m, d] = iso.split("-");
-  return `${parseInt(d)} ${months[parseInt(m) - 1]} ${parseInt(y) + 543}`;
+  return `${String(parseInt(d)).padStart(2, "0")} ${MONTHS_TH[parseInt(m) - 1]} ${parseInt(y) + 543}`;
 }
+
+function channelLabel(ch) {
+  return Array.isArray(ch) ? ch.join("-") : String(ch);
+}
+
+// ─── CalendarInput: TextField แสดง Thai format + icon เปิด native date picker ──
+function CalendarInput({ value, onChange, maxDate, error, helperText }) {
+  const hiddenRef = useRef(null);
+
+  const handleIconClick = () => {
+    hiddenRef.current?.showPicker?.();
+    hiddenRef.current?.click();
+  };
+
+  return (
+    <Box sx={{ position: "relative" }}>
+      {/* TextField แสดงผล Thai format (readOnly display) */}
+      <TextField
+        fullWidth size="small"
+        value={formatDateThai(value)}
+        placeholder="เลือกวันที่"
+        error={error}
+        helperText={helperText}
+        InputProps={{
+          readOnly: true,
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton size="small" onClick={handleIconClick} tabIndex={-1}>
+                <CalendarMonthIcon fontSize="small" color={error ? "error" : "action"} />
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+        onClick={handleIconClick}
+        sx={{ cursor: "pointer", "& input": { cursor: "pointer" } }}
+      />
+      {/* hidden native date input — ทำหน้าที่เปิด date picker จริง */}
+      <input
+        ref={hiddenRef}
+        type="date"
+        value={value}
+        max={maxDate}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          position: "absolute",
+          top: 0, left: 0,
+          width: "100%", height: "100%",
+          opacity: 0,
+          pointerEvents: "none", // คลิกผ่าน icon แทน
+        }}
+        tabIndex={-1}
+      />
+    </Box>
+  );
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Loaded() {
   const apiUrl = import.meta.env.VITE_API_URL;
   const { token } = useAuth();
   const location = useLocation();
 
+  const navigate = useNavigate();
+  const lockedTruck = location.state?.truck ?? null;
+
   const [loading, setLoading] = useState(true);
   const [truckList, setTruckList] = useState([]);
   const [coopList, setCoopList] = useState([]);
 
-  // ✅ ถ้ามาจาก Manual จะมี truck ใน state → lock ไม่ให้เปลี่ยน
-  const lockedTruck = location.state?.truck ?? null;
   const [selectedTruck, setSelectedTruck] = useState(lockedTruck);
+  const [channelNumber, setChannelNumber] = useState(lockedTruck?.number_channel ?? 0);
 
   const [loadedDate, setLoadedDate] = useState(toISODate());
-  const [loadedTime, setLoadedTime] = useState(toISOTime());
+  // ✅ เวลาปัจจุบัน type="time"
+  const [loadedTime, setLoadedTime] = useState(toCurrentTime());
   const [loadedWeight, setLoadedWeight] = useState("");
   const [driverName, setDriverName] = useState("");
-  const [channelCoops, setChannelCoops] = useState({});
-  const [fillAll, setFillAll] = useState(false); // toggle บันทึกช่องเดียวกันทั้งคัน
-  const [allCoop, setAllCoop] = useState("");    // coop เดียวสำหรับทุกช่องเมื่อ fillAll
+
+  const [milkCompartmentList, setMilkCompartmentList] = useState([]);
+  const [checked, setChecked] = useState(false);
+
+  const [dateError, setDateError] = useState(false);
+  const [timeError, setTimeError] = useState(false);
+  const [weightError, setWeightError] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const headersReady = useMemo(() => Boolean(token && apiUrl), [token, apiUrl]);
 
@@ -75,6 +151,7 @@ export default function Loaded() {
         const data = await getLoadedTruckDetail({ apiUrl, token });
         setTruckList(data?.truck_list ?? []);
         setCoopList(data?.coop_list ?? []);
+        if (data?.default_payment_calculate_type === 2) setChecked(true);
       } catch (e) {
         console.error(e);
       } finally {
@@ -85,56 +162,77 @@ export default function Loaded() {
     if (headersReady) run();
   }, [headersReady, apiUrl, token]);
 
-  const channelCount = selectedTruck?.number_channel ?? 0;
-  const channels = Array.from({ length: channelCount }, (_, i) => i + 1);
+  useEffect(() => {
+    if (channelNumber === 0) { setMilkCompartmentList([]); return; }
+    if (checked) {
+      const channelName = Array.from({ length: channelNumber }, (_, i) => i + 1);
+      setMilkCompartmentList([{ channel: channelName, coop: [] }]);
+    } else {
+      setMilkCompartmentList(
+        Array.from({ length: channelNumber }, (_, i) => ({ channel: i + 1, coop: [] }))
+      );
+    }
+  }, [channelNumber, checked]);
 
-  const handleCoopChange = (ch, val) => {
-    setChannelCoops((prev) => ({ ...prev, [ch]: val }));
+  const handleSelectTruck = (truck) => {
+    setSelectedTruck(truck);
+    setChannelNumber(truck?.number_channel ?? 0);
   };
 
-  // เมื่อ fillAll เปิด → ตั้ง coop เดียวกันทุกช่อง
-  const handleFillAll = (val) => {
-    setAllCoop(val);
-    const all = {};
-    channels.forEach((ch) => { all[ch] = val; });
-    setChannelCoops(all);
+  const handleCoopChange = (rowIndex, newCoops) => {
+    setMilkCompartmentList((prev) => {
+      const next = [...prev];
+      next[rowIndex] = { ...next[rowIndex], coop: newCoops };
+      return next;
+    });
   };
 
   const validate = () => {
-    if (!selectedTruck) return "กรุณาเลือกทะเบียนรถ";
-    if (!loadedDate)    return "กรุณาเลือกวันที่ชั่งน้ำหนัก";
-    if (!loadedTime)    return "กรุณาเลือกเวลาชั่งน้ำหนัก";
-    if (!loadedWeight)  return "กรุณากรอกน้ำหนักรถพร้อมน้ำนม";
-    for (const ch of channels) {
-      if (!channelCoops[ch]) return `กรุณาเลือกสหกรณ์ของช่อง ${ch}`;
-    }
-    return "";
+    if (!selectedTruck) { alert("โปรดกรอก ทะเบียนรถ"); return false; }
+    if (!loadedDate)    { setDateError(true); return false; }
+    if (!loadedTime)    { setTimeError(true); return false; }
+    if (!loadedWeight || isNaN(parseFloat(loadedWeight))) { setWeightError(true); return false; }
+    const isCoopNull = milkCompartmentList.every((item) => item.coop.length === 0);
+    if (isCoopNull) { alert("โปรดเลือก ศูนย์ ฯ/สหกรณ์ที่ส่งน้ำนม"); return false; }
+    setDateError(false); setTimeError(false); setWeightError(false);
+    return true;
   };
 
-  const onSave = () => {
-    const err = validate();
-    if (err) { alert(err); return; }
+  const onSubmit = () => { if (validate()) setConfirmOpen(true); };
+
+  const onConfirmSave = () => {
+    setConfirmOpen(false);
+    let finalList = milkCompartmentList;
+    if (checked) {
+      finalList = milkCompartmentList[0].channel.map((_, i) => ({
+        channel: i + 1,
+        coop: milkCompartmentList[0].coop,
+      }));
+    }
+    const [y, m, d] = loadedDate.split("-");
+    const [hh, mm] = loadedTime.split(":");
+    const dt = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(hh), parseInt(mm));
     const payload = {
       truck_id: selectedTruck.truck_id,
-      truck_license: selectedTruck.truck_license,
       driver_name: driverName,
-      truck_loaded_date_time: `${loadedDate}T${loadedTime}`,
-      truck_loaded_weight: loadedWeight,
-      truck_milk_channel_coop: channels.map((ch) => ({ channel: ch, coop_id: channelCoops[ch] })),
+      truck_loaded_date_time: dt.toISOString(),
+      truck_loaded_weight: parseFloat(parseFloat(loadedWeight).toFixed(2)),
+      truck_milk_channel_coop: finalList,
+      calulate_type: checked ? 2 : 1,
     };
     console.log("SAVE LOADED payload:", payload);
-    alert("ฟอร์ม Loaded ผ่านแล้ว (ต่อ API บันทึกได้เลย)");
+    // TODO: axios.post(`${apiUrl}/loadedTruck/save`, payload, { headers })
+    alert("บันทึกสำเร็จ (TODO: ต่อ API)");
   };
 
   const onReset = () => {
-    if (!lockedTruck) setSelectedTruck(null);
+    if (!lockedTruck) { setSelectedTruck(null); setChannelNumber(0); }
     setDriverName("");
     setLoadedWeight("");
-    setChannelCoops({});
-    setAllCoop("");
-    setFillAll(false);
+    setChecked(false);
     setLoadedDate(toISODate());
-    setLoadedTime(toISOTime());
+    setLoadedTime(toCurrentTime());
+    setDateError(false); setTimeError(false); setWeightError(false);
   };
 
   if (!navigator.onLine) {
@@ -147,250 +245,216 @@ export default function Loaded() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
-      <Paper elevation={2} sx={{ p: 4, borderRadius: 2 }}>
 
-        <Typography variant="h6" sx={{ fontWeight: 800, mb: 3 }}>
+      {/* ── Card 1: ข้อมูลรถ ── */}
+      <Paper elevation={2} sx={{ p: 3, borderRadius: 2, mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
           บันทึกการชั่งน้ำหนักรถพร้อมน้ำนม
         </Typography>
 
         {loading ? (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 2 }}>
             <CircularProgress size={22} />
             <Typography>กำลังโหลดข้อมูล...</Typography>
           </Box>
         ) : (
-          <>
-            {/* ───── แถวบน: 3 คอลัมน์ ───── */}
-            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 3, mb: 3 }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
 
-              {/* คอลัมน์ 1: ทะเบียนรถ / เจ้าของรถ / คนขับ */}
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    ทะเบียนรถ : <span style={{ color: "red" }}>*</span>
-                  </Typography>
-                  {/* ✅ ถ้ามาจาก Manual (lockedTruck) → readonly TextField, ไม่ให้เปลี่ยน */}
-                  {lockedTruck ? (
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={lockedTruck.truck_license}
-                      InputProps={{ readOnly: true }}
-                      sx={{ "& .MuiInputBase-root": { bgcolor: "#f5f5f5" } }}
-                    />
-                  ) : (
-                    <Autocomplete
-                      options={truckList}
-                      value={selectedTruck}
-                      onChange={(_, v) => { setSelectedTruck(v); setChannelCoops({}); setAllCoop(""); setFillAll(false); }}
-                      getOptionLabel={(opt) => opt?.truck_license ?? ""}
-                      isOptionEqualToValue={(a, b) => a?.truck_id === b?.truck_id}
-                      renderInput={(params) => (
-                        <TextField {...params} size="small" placeholder="พิมพ์เพื่อค้นหา" />
-                      )}
-                    />
+            {/* ทะเบียนรถ */}
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                ทะเบียนรถ : <span style={{ color: "red" }}>*</span>
+              </Typography>
+              {lockedTruck ? (
+                <TextField fullWidth size="small" value={lockedTruck.truck_license}
+                  InputProps={{ readOnly: true }}
+                  sx={{ "& .MuiInputBase-root": { bgcolor: "#f5f5f5" } }} />
+              ) : (
+                <>
+                  <Autocomplete
+                    options={truckList} value={selectedTruck}
+                    onChange={(_, v) => handleSelectTruck(v)}
+                    getOptionLabel={(opt) => opt?.truck_license ?? ""}
+                    isOptionEqualToValue={(a, b) => a?.truck_id === b?.truck_id}
+                    renderInput={(params) => (
+                      <TextField {...params} size="small" placeholder="ทะเบียนรถ" />
+                    )}
+                  />
+                  {!selectedTruck && (
+                    <Typography variant="caption" color="error">โปรดกรอก ทะเบียนรถ</Typography>
                   )}
-                </Box>
-
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    เจ้าของรถ
-                  </Typography>
-                  {/* ✅ เจ้าของรถ readonly เสมอ (ดึงจาก truck) */}
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={selectedTruck?.owner ?? ""}
-                    InputProps={{ readOnly: true }}
-                    sx={{ "& .MuiInputBase-root": { bgcolor: "#f5f5f5" } }}
-                  />
-                </Box>
-
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    ชื่อ-นามสกุลคนขับรถ :
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={driverName}
-                    onChange={(e) => setDriverName(e.target.value)}
-                    placeholder="ชื่อ-นามสกุลคนขับรถ"
-                  />
-                </Box>
-              </Box>
-
-              {/* คอลัมน์ 2: วันที่ / เวลา */}
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    วันที่ชั่งน้ำหนัก : <span style={{ color: "red" }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="date"
-                    value={loadedDate}
-                    onChange={(e) => setLoadedDate(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    // แสดงวันที่ไทยเป็น placeholder (optional)
-                    inputProps={{ style: { cursor: "pointer" } }}
-                  />
-                  {loadedDate && (
-                    <Typography variant="caption" color="text.secondary">
-                      {formatDateThai(loadedDate)}
-                    </Typography>
-                  )}
-                </Box>
-
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    เวลาที่ชั่งน้ำหนัก : <span style={{ color: "red" }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="time"
-                    value={loadedTime}
-                    onChange={(e) => setLoadedTime(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Box>
-              </Box>
-
-              {/* คอลัมน์ 3: น้ำหนัก + ปุ่ม */}
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    น้ำหนักรถพร้อมน้ำนม (กก.) : <span style={{ color: "red" }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={loadedWeight}
-                    onChange={(e) => setLoadedWeight(e.target.value)}
-                    placeholder="น้ำหนักรถพร้อมน้ำนม"
-                    type="number"
-                    inputProps={{ min: 0 }}
-                  />
-                </Box>
-              </Box>
+                </>
+              )}
             </Box>
 
-            {/* ───── ตารางช่องน้ำนม ───── */}
-            {selectedTruck && channelCount > 0 && (
-              <Box sx={{ mt: 1 }}>
-                {/* Header + Toggle */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 700 }}>
-                    บันทึกข้อมูลช่องน้ำนมลงทั้งคัน
-                  </Typography>
-                  <Switch
-                    checked={fillAll}
-                    onChange={(e) => {
-                      setFillAll(e.target.checked);
-                      if (!e.target.checked) { setAllCoop(""); setChannelCoops({}); }
-                    }}
-                    size="small"
-                  />
-                </Box>
-
-                {/* เมื่อ toggle เปิด: dropdown เลือก coop เดียว apply ทุกช่อง */}
-                {fillAll && (
-                  <Box sx={{ mb: 2, maxWidth: 400 }}>
-                    <FormControl fullWidth size="small">
-                      <Select
-                        displayEmpty
-                        value={allCoop}
-                        onChange={(e) => handleFillAll(e.target.value)}
-                        renderValue={(v) => v ? (coopList.find(c => c.coop_id === v)?.coop_nickname || coopList.find(c => c.coop_id === v)?.coop_name || v) : <em style={{ color: "#aaa" }}>เลือกสหกรณ์ (ใช้กับทุกช่อง)</em>}
-                      >
-                        <MenuItem value=""><em>เลือก</em></MenuItem>
-                        {coopList.map((c) => (
-                          <MenuItem key={c.coop_id} value={c.coop_id}>
-                            {c.coop_nickname || c.coop_name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Box>
-                )}
-
-                <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: "#fafafa" }}>
-                        <TableCell sx={{ fontWeight: 700, width: 100, textAlign: "center" }}>
-                          ช่อง&nbsp;↕
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>
-                          ศูนย์ฯ / สหกรณ์ที่ส่งน้ำนม&nbsp;↕
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {channels.map((ch) => (
-                        <TableRow key={ch} hover>
-                          <TableCell sx={{ textAlign: "center", fontWeight: 600 }}>
-                            {ch}
-                          </TableCell>
-                          <TableCell>
-                            <FormControl fullWidth size="small">
-                              <Select
-                                displayEmpty
-                                value={channelCoops[ch] ?? ""}
-                                onChange={(e) => handleCoopChange(ch, e.target.value)}
-                                disabled={fillAll} // ล็อคเมื่อใช้ fillAll
-                                renderValue={(v) =>
-                                  v
-                                    ? (coopList.find((c) => c.coop_id === v)?.coop_nickname ||
-                                       coopList.find((c) => c.coop_id === v)?.coop_name || v)
-                                    : <em style={{ color: "#aaa" }}>เลือก</em>
-                                }
-                                sx={{ bgcolor: fillAll ? "#f5f5f5" : "inherit" }}
-                              >
-                                <MenuItem value=""><em>เลือก</em></MenuItem>
-                                {coopList.map((c) => (
-                                  <MenuItem key={c.coop_id} value={c.coop_id}>
-                                    {c.coop_nickname || c.coop_name}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            )}
-
-            {/* ───── ปุ่ม บันทึก / ยกเลิก (ขวาล่าง) ───── */}
-            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 3 }}>
-              <Button
-                variant="contained"
-                color="success"
-                size="large"
-                sx={{ minWidth: 160, fontWeight: 700 }}
-                onClick={onSave}
-                disabled={!selectedTruck}
-              >
-                บันทึกข้อมูล
-              </Button>
-              <Button
-                variant="contained"
-                color="error"
-                size="large"
-                sx={{ minWidth: 160, fontWeight: 700 }}
-                onClick={onReset}
-              >
-                ยกเลิก
-              </Button>
+            {/* ชื่อ-นามสกุลคนขับ */}
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                ชื่อ-นามสกุลคนขับรถ :
+              </Typography>
+              <TextField fullWidth size="small" value={driverName}
+                onChange={(e) => setDriverName(e.target.value)}
+                placeholder="ชื่อ-นามสกุลคนขับรถ" />
             </Box>
-          </>
+
+            {/* ✅ วันที่ชั่งน้ำหนัก — CalendarInput แสดง Thai format + calendar icon */}
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                วันที่ชั่งน้ำหนัก : <span style={{ color: "red" }}>*</span>
+              </Typography>
+              <CalendarInput
+                value={loadedDate}
+                onChange={(v) => { setLoadedDate(v); setDateError(false); }}
+                maxDate={toISODate()}
+                error={dateError}
+                helperText={dateError ? "กรุณาระบุวันที่" : ""}
+              />
+            </Box>
+
+            {/* ✅ เวลา — type="time" แสดงเวลาปัจจุบัน + ปุ่ม clear */}
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                เวลาที่ชั่งน้ำหนัก : <span style={{ color: "red" }}>*</span>
+              </Typography>
+              <TextField
+                fullWidth size="small" type="time"
+                value={loadedTime}
+                onChange={(e) => { setLoadedTime(e.target.value); setTimeError(false); }}
+                error={timeError}
+                helperText={timeError ? "กรุณาระบุเวลา" : ""}
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  endAdornment: loadedTime ? (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setLoadedTime("")} tabIndex={-1}>
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
+              />
+            </Box>
+
+            {/* เจ้าของรถ — readonly */}
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                เจ้าของรถ :
+              </Typography>
+              <TextField fullWidth size="small" value={selectedTruck?.owner ?? ""}
+                InputProps={{ readOnly: true }} placeholder="เจ้าของรถ"
+                sx={{ "& .MuiInputBase-root": { bgcolor: "#f5f5f5" } }} />
+            </Box>
+          </Box>
         )}
       </Paper>
+
+      {/* ── Card 2: น้ำหนักรถพร้อมน้ำนม ── */}
+      {!loading && (
+        <Paper elevation={2} sx={{ p: 3, borderRadius: 2, mb: 2 }}>
+          <Box sx={{ maxWidth: 360 }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+              น้ำหนักรถพร้อมน้ำนม (กก.) : <span style={{ color: "red" }}>*</span>
+            </Typography>
+            <TextField fullWidth size="small" type="number"
+              value={loadedWeight}
+              onChange={(e) => { setLoadedWeight(e.target.value); setWeightError(false); }}
+              onBlur={(e) => {
+                const v = parseFloat(e.target.value);
+                if (!isNaN(v)) setLoadedWeight(v.toFixed(2));
+              }}
+              inputProps={{ step: "0.01", min: "0" }}
+              placeholder="น้ำหนักรถพร้อมน้ำนม"
+              error={weightError}
+              helperText={weightError ? "กรุณาระบุน้ำหนัก" : ""}
+            />
+          </Box>
+        </Paper>
+      )}
+
+      {/* ── Card 3: ตารางช่องน้ำนม ── */}
+      {!loading && (
+        <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+            <Typography variant="body1" sx={{ fontWeight: 700 }}>
+              บันทึกข้อมูลช่องน้ำนม
+            </Typography>
+            <FormControlLabel
+              control={<Checkbox checked={checked} onChange={(e) => setChecked(e.target.checked)} size="small" />}
+              label="ลงทั้งคัน"
+              sx={{ ml: 0.5, "& .MuiFormControlLabel-label": { fontWeight: 600, fontSize: 14 } }}
+            />
+          </Box>
+
+          {selectedTruck && milkCompartmentList.length > 0 ? (
+            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "#fafafa" }}>
+                    <TableCell sx={{ fontWeight: 700, width: 100, textAlign: "center" }}>ช่อง ↕</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>ศูนย์ ฯ / สหกรณ์ที่ส่งน้ำนม ↕</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {milkCompartmentList.map((row, idx) => (
+                    <TableRow key={idx} hover>
+                      <TableCell sx={{ textAlign: "center", fontWeight: 600 }}>
+                        {channelLabel(row.channel)}
+                      </TableCell>
+                      <TableCell>
+                        <Autocomplete
+                          multiple disableCloseOnSelect size="small"
+                          options={coopList}
+                          value={row.coop}
+                          onChange={(_, newVal) => handleCoopChange(idx, newVal)}
+                          getOptionLabel={(opt) => opt?.coop_name ?? ""}
+                          isOptionEqualToValue={(a, b) => a?.coop_id === b?.coop_id}
+                          filterSelectedOptions
+                          renderTags={(value, getTagProps) =>
+                            value.map((option, i) => (
+                              <Chip key={option.coop_id} label={option.coop_name} size="small"
+                                {...getTagProps({ index: i })} />
+                            ))
+                          }
+                          renderInput={(params) => (
+                            <TextField {...params} placeholder={row.coop.length === 0 ? "เลือก" : ""} />
+                          )}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            !selectedTruck && (
+              <Typography variant="body2" color="text.secondary">กรุณาเลือกทะเบียนรถก่อน</Typography>
+            )
+          )}
+
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 3 }}>
+            <Button variant="contained" color="error" size="large"
+              sx={{ minWidth: 160, fontWeight: 700 }} onClick={() => navigate(-1)}>
+              ยกเลิก
+            </Button>
+            <Button variant="contained" color="success" size="large"
+              sx={{ minWidth: 160, fontWeight: 700 }} onClick={onSubmit} disabled={!selectedTruck}>
+              บันทึกข้อมูล
+            </Button>
+          </Box>
+        </Paper>
+      )}
+
+      {/* ── Confirm Dialog ── */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>ยืนยันการบันทึก</DialogTitle>
+        <DialogContent>
+          <DialogContentText>ต้องการบันทึกข้อมูลทั้งหมดหรือไม่</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button color="error" variant="contained" onClick={() => setConfirmOpen(false)}>ยกเลิก</Button>
+          <Button color="success" variant="contained" onClick={onConfirmSave}>ตกลง</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }
