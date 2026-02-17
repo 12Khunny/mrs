@@ -1,77 +1,91 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const AuthContext = createContext(null);
 
+const STORAGE_KEY = "mrs_auth_v1";
+
+function readStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // ignore
+  }
+}
+
+function clearStorage() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export default function AuthProvider({ children }) {
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [refreshToken, setRefreshToken] = useState(localStorage.getItem("refreshToken"));
-  const [name, setName] = useState(localStorage.getItem("name"));
-  const [userType, setUserType] = useState(localStorage.getItem("userType"));
-  const [coop, setCoopState] = useState(localStorage.getItem("coop-msc-milk-supply-chain") || "[]");
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const [token, setTokenState] = useState(null);
+  const [refreshToken, setRefreshTokenState] = useState(null);
+  const [name, setNameState] = useState("");
+  const [userType, setUserTypeState] = useState(null);
+  const [coop, setCoopState] = useState([]);
 
-  const setCoop = (coopList) => setCoopState(JSON.stringify(coopList ?? []));
+  // ✅ hydrate จาก localStorage ตอนเปิดแอพ/รีเฟรช
+  useEffect(() => {
+    const saved = readStorage();
+    if (saved?.token) setTokenState(saved.token);
+    if (saved?.refreshToken) setRefreshTokenState(saved.refreshToken);
+    if (saved?.name) setNameState(saved.name);
+    if (saved?.userType != null) setUserTypeState(saved.userType);
+    if (Array.isArray(saved?.coop)) setCoopState(saved.coop);
+  }, []);
 
-  const logout = () => {
-    setToken(null);
-    setRefreshToken(null);
-    setName(null);
-    setUserType(null);
-    setCoopState("[]");
-    localStorage.clear();
+  // ✅ helper: update + persist
+  const setToken = (v) => {
+    setTokenState(v);
+    const cur = readStorage() || {};
+    writeStorage({ ...cur, token: v });
   };
 
-  // persist
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem("token", token);
-      localStorage.setItem("refreshToken", refreshToken ?? "");
-      localStorage.setItem("name", name ?? "");
-      localStorage.setItem("userType", userType ?? "");
-      localStorage.setItem("coop-msc-milk-supply-chain", coop ?? "[]");
-    } else {
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("name");
-      localStorage.removeItem("userType");
-      localStorage.removeItem("coop-msc-milk-supply-chain");
-    }
-  }, [token, refreshToken, name, userType, coop]);
+  const setRefreshToken = (v) => {
+    setRefreshTokenState(v);
+    const cur = readStorage() || {};
+    writeStorage({ ...cur, refreshToken: v });
+  };
 
-  useEffect(() => {
-    const handleOffline = () => logout();
-    window.addEventListener("offline", handleOffline);
-    return () => window.removeEventListener("offline", handleOffline);
-  }, []);
+  const setName = (v) => {
+    setNameState(v);
+    const cur = readStorage() || {};
+    writeStorage({ ...cur, name: v });
+  };
 
-  // (แนะนำ) ถ้ามี token ให้ ping เว็บหลักซัก endpoint เพื่อยืนยันว่าใช้งานได้จริง
-  useEffect(() => {
-    const checkSession = async () => {
-      if (!token) return;
-      if (!navigator.onLine) {
-        Swal.fire({
-          icon: "warning",
-          title: "ไม่มีอินเทอร์เน็ต",
-          text: "ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อเข้าสู่ระบบ",
-          confirmButtonText: "ตกลง",
-        });
-        return;
-      }
+  const setUserType = (v) => {
+    setUserTypeState(v);
+    const cur = readStorage() || {};
+    writeStorage({ ...cur, userType: v });
+  };
 
-      try {
-        await axios.get(`${apiUrl}/authen/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 8000,
-        });
-      } catch {
-        // token หมดอายุ/ติดต่อไม่ได้ -> กลับไป login
-        logout();
-      }
-    };
-    checkSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const setCoop = (v) => {
+    setCoopState(v);
+    const cur = readStorage() || {};
+    writeStorage({ ...cur, coop: v });
+  };
+
+  const logout = () => {
+    setTokenState(null);
+    setRefreshTokenState(null);
+    setNameState("");
+    setUserTypeState(null);
+    setCoopState([]);
+    clearStorage();
+  };
 
   const value = useMemo(
     () => ({
@@ -90,15 +104,7 @@ export default function AuthProvider({ children }) {
     [token, refreshToken, name, userType, coop]
   );
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
-}
+export const useAuth = () => useContext(AuthContext);
