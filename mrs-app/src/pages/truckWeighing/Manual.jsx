@@ -21,6 +21,15 @@ import { useAuth } from "../../providers/authProvider";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../providers/toastProvider";
 
+const filterOptions = (options, { inputValue }) => {
+  const searchTerm = inputValue.trim().toLowerCase();
+  if (!searchTerm) return options;
+  return options.filter(option => 
+    (option.truck_license || '').toLowerCase().includes(searchTerm) ||
+    (option.owner || '').toLowerCase().includes(searchTerm)
+  );
+};
+
 export default function TruckWeighingManual() {
   const apiUrl = import.meta.env.VITE_API_URL;
   const { token } = useAuth();
@@ -126,13 +135,16 @@ export default function TruckWeighingManual() {
         ) : (
           <Box sx={{ mt: 3 }}>
             <Autocomplete
+              openOnFocus
+              autoHighlight
               options={truckList}
               value={selectedTruck}
               onChange={(_, v) => setSelectedTruck(v)}
               getOptionLabel={(opt) => opt?.truck_license ?? ""}
               isOptionEqualToValue={(a, b) => a?.truck_license === b?.truck_license}
+              filterOptions={filterOptions}
               renderInput={(params) => (
-                <TextField {...params} label="เลือกทะเบียนรถ" placeholder="พิมพ์เพื่อค้นหา" />
+                <TextField {...params} label="เลือกทะเบียนรถ" placeholder="พิมพ์เพื่อค้นหา..." />
               )}
             />
 

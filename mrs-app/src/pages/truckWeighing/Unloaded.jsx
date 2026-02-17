@@ -154,8 +154,8 @@ export default function TruckWeighingUnloaded() {
       const payload = {
         id: Number(id),
         driver_name: driverName,
-        truck_unloaded_date_time: dt.toISOString(),
-        truck_unloaded_weight: parseFloat(parseFloat(unloadedWeight).toFixed(2)),
+        truck_unloaded_date_time: dt.toISOString().slice(0, -5),
+        truck_unloaded_weight: parseFloat(unloadedWeight).toFixed(2),
       };
 
       await axios.post(`${apiUrl}/unloadedTruck/save`, payload, { headers });

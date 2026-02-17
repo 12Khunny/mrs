@@ -34,6 +34,25 @@ import { useAuth } from "../../providers/authProvider";
 import { useToast } from "../../providers/toastProvider";
 import { getLoadedTruckDetail } from "../../services/loadedService";
 
+// ─── filter options ───────────────────────────────────────────────────────────
+
+const truckFilterOptions = (options, { inputValue }) => {
+  const searchTerm = inputValue.trim().toLowerCase();
+  if (!searchTerm) return options;
+  return options.filter(option => 
+    (option.truck_license || '').toLowerCase().includes(searchTerm)
+  );
+};
+
+const coopFilterOptions = (options, { inputValue }) => {
+  const searchTerm = inputValue.trim().toLowerCase();
+  if (!searchTerm) return options;
+  return options.filter(option => 
+    (option.coop_name || '').toLowerCase().includes(searchTerm) ||
+    (option.coop_nickname || '').toLowerCase().includes(searchTerm)
+  );
+};
+
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 function toISODate(d = new Date()) {
@@ -223,9 +242,12 @@ export default function Loaded() {
       const payload = {
         truck_id: selectedTruck.truck_id,
         driver_name: driverName,
-        truck_loaded_date_time: dt.toISOString(),
-        truck_loaded_weight: parseFloat(parseFloat(loadedWeight).toFixed(2)),
-        truck_milk_channel_coop: finalList,
+        truck_loaded_date_time: dt.toISOString().slice(0, -5),
+        truck_loaded_weight: parseFloat(loadedWeight).toFixed(2),
+        truck_milk_channel_coop: finalList.map(item => ({
+          channel: item.channel,
+          coop: item.coop.map(c => ({ coop_id: c.coop_id }))
+        })),
         calulate_type: checked ? 2 : 1,
       };
 
@@ -274,12 +296,16 @@ export default function Loaded() {
               ) : (
                 <>
                   <Autocomplete
-                    options={truckList} value={selectedTruck}
+                    openOnFocus
+                    autoHighlight
+                    options={truckList} 
+                    value={selectedTruck}
                     onChange={(_, v) => handleSelectTruck(v)}
                     getOptionLabel={(opt) => opt?.truck_license ?? ""}
                     isOptionEqualToValue={(a, b) => a?.truck_id === b?.truck_id}
+                    filterOptions={truckFilterOptions}
                     renderInput={(params) => (
-                      <TextField {...params} size="small" placeholder="ทะเบียนรถ" />
+                      <TextField {...params} size="small" placeholder="ค้นหาทะเบียนรถ..." />
                     )}
                   />
                   {!selectedTruck && (
@@ -398,6 +424,8 @@ export default function Loaded() {
                       </TableCell>
                       <TableCell>
                         <Autocomplete
+                          openOnFocus
+                          autoHighlight
                           multiple disableCloseOnSelect size="small"
                           options={coopList}
                           value={row.coop}
@@ -405,6 +433,7 @@ export default function Loaded() {
                           getOptionLabel={(opt) => opt?.coop_name ?? ""}
                           isOptionEqualToValue={(a, b) => a?.coop_id === b?.coop_id}
                           filterSelectedOptions
+                          filterOptions={coopFilterOptions}
                           renderTags={(value, getTagProps) =>
                             value.map((option, i) => {
                               const { key, ...tagProps } = getTagProps({ index: i });
@@ -414,7 +443,7 @@ export default function Loaded() {
                             })
                           }
                           renderInput={(params) => (
-                            <TextField {...params} placeholder={row.coop.length === 0 ? "เลือก" : ""} />
+                            <TextField {...params} placeholder={row.coop.length === 0 ? "ค้นหาสหกรณ์..." : ""} />
                           )}
                         />
                       </TableCell>
