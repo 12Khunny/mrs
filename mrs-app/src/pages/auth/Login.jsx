@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const { login } = useAuth(); // ✅ เปลี่ยนจาก setToken มาใช้ login()
+  const { login } = useAuth();
   const { showToast } = useToast();
 
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -29,11 +29,9 @@ export default function LoginPage() {
         password,
       });
 
-      // ✅ รองรับหลายรูปแบบ response
       const data = res.data || {};
       const token = data.access_token || data.token || null;
 
-      // ถ้า backend ส่ง user แยก object
       const userObj = data.user || {};
 
       const savedUsername = data.username ?? userObj.username ?? username ?? "";
@@ -42,7 +40,6 @@ export default function LoginPage() {
       const savedUserType = data.userType ?? userObj.userType ?? null;
       const savedCoop = data.coop ?? userObj.coop ?? [];
 
-      // ✅ ใช้ login() ทีเดียวจบ (จะ persist ให้เอง)
       login({
         token,
         refreshToken: data.refresh_token ?? data.refreshToken ?? null,

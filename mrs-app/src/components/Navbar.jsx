@@ -28,13 +28,11 @@ const routes = [
   { label: "บันทึกการชั่งน้ำหนักแบบ Manual", path: "/truckWeighing/Manual" },
 ];
 
-// ✅ path ที่เป็น sub-flow ของแต่ละ tab
-// key = prefix ของ path, value = tab index
 const pathToTab = [
   { prefix: "/truckWeighing/Auto", tab: 0 },
   { prefix: "/truckWeighing/Manual", tab: 1 },
-  { prefix: "/truckWeighing/Loaded", tab: 1 },   // ✅ Loaded อยู่ใน flow ของ Manual
-  { prefix: "/truckWeighing/Unloaded", tab: 1 }, // ✅ Unloaded อยู่ใน flow ของ Manual
+  { prefix: "/truckWeighing/Loaded", tab: 1 },
+  { prefix: "/truckWeighing/Unloaded", tab: 1 },
 ];
 
 export default function Navbar() {

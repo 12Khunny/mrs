@@ -1,4 +1,3 @@
-// mrs-app/src/pages/truckWeighing/Manual.jsx
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
@@ -23,7 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "../../providers/toastProvider";
 
 export default function TruckWeighingManual() {
-  const apiUrl = import.meta.env.VITE_API_URL; // เช่น https://api.zyanwoa.com/__testapi2__
+  const apiUrl = import.meta.env.VITE_API_URL;
   const { token } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -33,7 +32,7 @@ export default function TruckWeighingManual() {
   const [selectedTruck, setSelectedTruck] = useState(null);
 
   const [pendingOpen, setPendingOpen] = useState(false);
-  const [pendingPayload, setPendingPayload] = useState(null); // { latestId, truck }
+  const [pendingPayload, setPendingPayload] = useState(null);
 
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
@@ -41,12 +40,11 @@ export default function TruckWeighingManual() {
     const fetchInit = async () => {
       setLoading(true);
       try {
-        // ดึง truck_list จาก loadedTruckDetail เหมือนเว็บหลัก
         const res = await axios.get(`${apiUrl}/loadedTruck/loadedTruckDetail`, { headers });
         setTruckList(res.data?.truck_list ?? []);
       } catch (e) {
         console.error(e);
-        showToast?.("โหลดทะเบียนรถไม่สำเร็จ", "error");
+        showToast("โหลดทะเบียนรถไม่สำเร็จ", "error");
       } finally {
         setLoading(false);
       }
@@ -63,27 +61,21 @@ export default function TruckWeighingManual() {
     if (!selectedTruck) return;
 
     try {
-      // 1) เรียก list รายการชั่งเข้า
       const listRes = await axios.get(`${apiUrl}/loadedTruck/loadedTruckList`, { headers });
       const list = Array.isArray(listRes.data) ? listRes.data : [];
 
-      // 2) กรองตามทะเบียน (ตามที่ฝั่งเว็บหลักบอกให้ใช้)
       const sameTruck = list.filter((x) => x?.truck_license === selectedTruck?.truck_license);
 
-      // ไม่เคยมีรายการ -> ไปเริ่มชั่งเข้าใหม่ (Loaded)
       if (sameTruck.length === 0) {
         navigate("/truckWeighing/Loaded", { state: { truck: selectedTruck } });
         return;
       }
 
-      // 3) หารายการล่าสุด (ใช้ id มากสุดเป็นหลัก)
       const latest = sameTruck.reduce(
         (best, cur) => ((cur?.id || 0) > (best?.id || 0) ? cur : best),
         sameTruck[0]
       );
 
-      // 4) เช็ค unloaded ว่ามีหรือยัง
-      // ถ้า endpoint นี้ 404/พัง ให้ถือว่ายังไม่มี unloaded
       let detail;
       try {
         const detailRes = await axios.get(
@@ -98,18 +90,16 @@ export default function TruckWeighingManual() {
       const hasLoaded = !!(latest?.truck_loaded_weight || detail?.truck_loaded_weight);
       const hasUnloaded = !!detail?.truck_unloaded_weight;
 
-      // ถ้ามีชั่งเข้าแล้ว แต่ยังไม่มีชั่งออก -> เปิด dialog ไปหน้า Unloaded ของรายการเดิม
       if (hasLoaded && !hasUnloaded) {
         setPendingPayload({ latestId: latest.id, truck: selectedTruck });
         setPendingOpen(true);
         return;
       }
 
-      // ถ้ารายการล่าสุดครบแล้ว -> เริ่มรายการใหม่ ไปหน้า Loaded
       navigate("/truckWeighing/Loaded", { state: { truck: selectedTruck } });
     } catch (e) {
       console.error(e);
-      showToast?.("ตรวจสอบรายการล่าสุดไม่สำเร็จ", "error");
+      showToast("ตรวจสอบรายการล่าสุดไม่สำเร็จ", "error");
     }
   };
 
@@ -165,7 +155,6 @@ export default function TruckWeighingManual() {
         )}
       </Paper>
 
-      {/* ✅ Dialog กรณีพบรายการค้าง (มี loaded แล้ว แต่ยังไม่มี unloaded) */}
       <Dialog open={pendingOpen} onClose={() => setPendingOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 800 }}>พบรายการค้าง</DialogTitle>
         <DialogContent>

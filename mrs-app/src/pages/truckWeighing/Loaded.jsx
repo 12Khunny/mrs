@@ -29,7 +29,9 @@ import {
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import ClearIcon from "@mui/icons-material/Clear";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { useAuth } from "../../providers/authProvider";
+import { useToast } from "../../providers/toastProvider";
 import { getLoadedTruckDetail } from "../../services/loadedService";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -71,7 +73,6 @@ function CalendarInput({ value, onChange, maxDate, error, helperText }) {
 
   return (
     <Box sx={{ position: "relative" }}>
-      {/* TextField แสดงผล Thai format (readOnly display) */}
       <TextField
         fullWidth size="small"
         value={formatDateThai(value)}
@@ -91,7 +92,6 @@ function CalendarInput({ value, onChange, maxDate, error, helperText }) {
         onClick={handleIconClick}
         sx={{ cursor: "pointer", "& input": { cursor: "pointer" } }}
       />
-      {/* hidden native date input — ทำหน้าที่เปิด date picker จริง */}
       <input
         ref={hiddenRef}
         type="date"
@@ -103,7 +103,7 @@ function CalendarInput({ value, onChange, maxDate, error, helperText }) {
           top: 0, left: 0,
           width: "100%", height: "100%",
           opacity: 0,
-          pointerEvents: "none", // คลิกผ่าน icon แทน
+          pointerEvents: "none",
         }}
         tabIndex={-1}
       />
@@ -116,12 +116,14 @@ function CalendarInput({ value, onChange, maxDate, error, helperText }) {
 export default function Loaded() {
   const apiUrl = import.meta.env.VITE_API_URL;
   const { token } = useAuth();
+  const { showToast } = useToast();
   const location = useLocation();
-
   const navigate = useNavigate();
+  
   const lockedTruck = location.state?.truck ?? null;
 
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [truckList, setTruckList] = useState([]);
   const [coopList, setCoopList] = useState([]);
 
@@ -129,7 +131,6 @@ export default function Loaded() {
   const [channelNumber, setChannelNumber] = useState(lockedTruck?.number_channel ?? 0);
 
   const [loadedDate, setLoadedDate] = useState(toISODate());
-  // ✅ เวลาปัจจุบัน type="time"
   const [loadedTime, setLoadedTime] = useState(toCurrentTime());
   const [loadedWeight, setLoadedWeight] = useState("");
   const [driverName, setDriverName] = useState("");
@@ -143,6 +144,7 @@ export default function Loaded() {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const headersReady = useMemo(() => Boolean(token && apiUrl), [token, apiUrl]);
+  const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
   useEffect(() => {
     const run = async () => {
@@ -154,13 +156,14 @@ export default function Loaded() {
         if (data?.default_payment_calculate_type === 2) setChecked(true);
       } catch (e) {
         console.error(e);
+        showToast("โหลดข้อมูลไม่สำเร็จ", "error");
       } finally {
         setLoading(false);
       }
     };
     if (!navigator.onLine) { setLoading(false); return; }
     if (headersReady) run();
-  }, [headersReady, apiUrl, token]);
+  }, [headersReady, apiUrl, token, showToast]);
 
   useEffect(() => {
     if (channelNumber === 0) { setMilkCompartmentList([]); return; }
@@ -200,39 +203,42 @@ export default function Loaded() {
 
   const onSubmit = () => { if (validate()) setConfirmOpen(true); };
 
-  const onConfirmSave = () => {
+  const onConfirmSave = async () => {
     setConfirmOpen(false);
-    let finalList = milkCompartmentList;
-    if (checked) {
-      finalList = milkCompartmentList[0].channel.map((_, i) => ({
-        channel: i + 1,
-        coop: milkCompartmentList[0].coop,
-      }));
-    }
-    const [y, m, d] = loadedDate.split("-");
-    const [hh, mm] = loadedTime.split(":");
-    const dt = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(hh), parseInt(mm));
-    const payload = {
-      truck_id: selectedTruck.truck_id,
-      driver_name: driverName,
-      truck_loaded_date_time: dt.toISOString(),
-      truck_loaded_weight: parseFloat(parseFloat(loadedWeight).toFixed(2)),
-      truck_milk_channel_coop: finalList,
-      calulate_type: checked ? 2 : 1,
-    };
-    console.log("SAVE LOADED payload:", payload);
-    // TODO: axios.post(`${apiUrl}/loadedTruck/save`, payload, { headers })
-    alert("บันทึกสำเร็จ (TODO: ต่อ API)");
-  };
+    setSaving(true);
 
-  const onReset = () => {
-    if (!lockedTruck) { setSelectedTruck(null); setChannelNumber(0); }
-    setDriverName("");
-    setLoadedWeight("");
-    setChecked(false);
-    setLoadedDate(toISODate());
-    setLoadedTime(toCurrentTime());
-    setDateError(false); setTimeError(false); setWeightError(false);
+    try {
+      let finalList = milkCompartmentList;
+      if (checked) {
+        finalList = milkCompartmentList[0].channel.map((_, i) => ({
+          channel: i + 1,
+          coop: milkCompartmentList[0].coop,
+        }));
+      }
+
+      const [y, m, d] = loadedDate.split("-");
+      const [hh, mm] = loadedTime.split(":");
+      const dt = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(hh), parseInt(mm));
+
+      const payload = {
+        truck_id: selectedTruck.truck_id,
+        driver_name: driverName,
+        truck_loaded_date_time: dt.toISOString(),
+        truck_loaded_weight: parseFloat(parseFloat(loadedWeight).toFixed(2)),
+        truck_milk_channel_coop: finalList,
+        calulate_type: checked ? 2 : 1,
+      };
+
+      await axios.post(`${apiUrl}/loadedTruck/save`, payload, { headers });
+      
+      showToast("บันทึกสำเร็จ", "success");
+      navigate("/truckWeighing/Manual", { replace: true });
+    } catch (error) {
+      console.error("Save error:", error);
+      showToast("บันทึกไม่สำเร็จ กรุณาลองใหม่", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!navigator.onLine) {
@@ -245,8 +251,6 @@ export default function Loaded() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
-
-      {/* ── Card 1: ข้อมูลรถ ── */}
       <Paper elevation={2} sx={{ p: 3, borderRadius: 2, mb: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
           บันทึกการชั่งน้ำหนักรถพร้อมน้ำนม
@@ -259,8 +263,6 @@ export default function Loaded() {
           </Box>
         ) : (
           <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
-
-            {/* ทะเบียนรถ */}
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
                 ทะเบียนรถ : <span style={{ color: "red" }}>*</span>
@@ -287,7 +289,6 @@ export default function Loaded() {
               )}
             </Box>
 
-            {/* ชื่อ-นามสกุลคนขับ */}
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
                 ชื่อ-นามสกุลคนขับรถ :
@@ -297,7 +298,6 @@ export default function Loaded() {
                 placeholder="ชื่อ-นามสกุลคนขับรถ" />
             </Box>
 
-            {/* ✅ วันที่ชั่งน้ำหนัก — CalendarInput แสดง Thai format + calendar icon */}
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
                 วันที่ชั่งน้ำหนัก : <span style={{ color: "red" }}>*</span>
@@ -311,7 +311,6 @@ export default function Loaded() {
               />
             </Box>
 
-            {/* ✅ เวลา — type="time" แสดงเวลาปัจจุบัน + ปุ่ม clear */}
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
                 เวลาที่ชั่งน้ำหนัก : <span style={{ color: "red" }}>*</span>
@@ -335,7 +334,6 @@ export default function Loaded() {
               />
             </Box>
 
-            {/* เจ้าของรถ — readonly */}
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
                 เจ้าของรถ :
@@ -348,7 +346,6 @@ export default function Loaded() {
         )}
       </Paper>
 
-      {/* ── Card 2: น้ำหนักรถพร้อมน้ำนม ── */}
       {!loading && (
         <Paper elevation={2} sx={{ p: 3, borderRadius: 2, mb: 2 }}>
           <Box sx={{ maxWidth: 360 }}>
@@ -371,7 +368,6 @@ export default function Loaded() {
         </Paper>
       )}
 
-      {/* ── Card 3: ตารางช่องน้ำนม ── */}
       {!loading && (
         <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
@@ -410,10 +406,12 @@ export default function Loaded() {
                           isOptionEqualToValue={(a, b) => a?.coop_id === b?.coop_id}
                           filterSelectedOptions
                           renderTags={(value, getTagProps) =>
-                            value.map((option, i) => (
-                              <Chip key={option.coop_id} label={option.coop_name} size="small"
-                                {...getTagProps({ index: i })} />
-                            ))
+                            value.map((option, i) => {
+                              const { key, ...tagProps } = getTagProps({ index: i });
+                              return (
+                                <Chip key={key} label={option.coop_name} size="small" {...tagProps} />
+                              );
+                            })
                           }
                           renderInput={(params) => (
                             <TextField {...params} placeholder={row.coop.length === 0 ? "เลือก" : ""} />
@@ -432,27 +430,42 @@ export default function Loaded() {
           )}
 
           <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 3 }}>
-            <Button variant="contained" color="error" size="large"
-              sx={{ minWidth: 160, fontWeight: 700 }} onClick={() => navigate(-1)}>
+            <Button 
+              variant="contained" 
+              color="error" 
+              size="large"
+              sx={{ minWidth: 160, fontWeight: 700 }} 
+              onClick={() => navigate(-1)}
+              disabled={saving}
+            >
               ยกเลิก
             </Button>
-            <Button variant="contained" color="success" size="large"
-              sx={{ minWidth: 160, fontWeight: 700 }} onClick={onSubmit} disabled={!selectedTruck}>
-              บันทึกข้อมูล
+            <Button 
+              variant="contained" 
+              color="success" 
+              size="large"
+              sx={{ minWidth: 160, fontWeight: 700 }} 
+              onClick={onSubmit} 
+              disabled={!selectedTruck || saving}
+            >
+              {saving ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
             </Button>
           </Box>
         </Paper>
       )}
 
-      {/* ── Confirm Dialog ── */}
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+      <Dialog open={confirmOpen} onClose={() => !saving && setConfirmOpen(false)}>
         <DialogTitle>ยืนยันการบันทึก</DialogTitle>
         <DialogContent>
           <DialogContentText>ต้องการบันทึกข้อมูลทั้งหมดหรือไม่</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button color="error" variant="contained" onClick={() => setConfirmOpen(false)}>ยกเลิก</Button>
-          <Button color="success" variant="contained" onClick={onConfirmSave}>ตกลง</Button>
+          <Button color="error" variant="contained" onClick={() => setConfirmOpen(false)} disabled={saving}>
+            ยกเลิก
+          </Button>
+          <Button color="success" variant="contained" onClick={onConfirmSave} disabled={saving}>
+            {saving ? "กำลังบันทึก..." : "ตกลง"}
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

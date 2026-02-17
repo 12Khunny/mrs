@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 
 const AuthContext = createContext(null);
 const STORAGE_KEY = "mrs_auth_v1";
@@ -51,42 +51,42 @@ export default function AuthProvider({ children }) {
     setIsReady(true);
   }, []);
 
-  const patchStorage = (patch) => {
+  const patchStorage = useCallback((patch) => {
     const cur = readStorage() || {};
     writeStorage({ ...cur, ...patch });
-  };
+  }, []);
 
-  const setToken = (v) => {
+  const setToken = useCallback((v) => {
     setTokenState(v);
     patchStorage({ token: v });
-  };
+  }, [patchStorage]);
 
-  const setRefreshToken = (v) => {
+  const setRefreshToken = useCallback((v) => {
     setRefreshTokenState(v);
     patchStorage({ refreshToken: v });
-  };
+  }, [patchStorage]);
 
-  const setUsername = (v) => {
+  const setUsername = useCallback((v) => {
     setUsernameState(v);
     patchStorage({ username: v });
-  };
+  }, [patchStorage]);
 
-  const setName = (v) => {
+  const setName = useCallback((v) => {
     setNameState(v);
     patchStorage({ name: v });
-  };
+  }, [patchStorage]);
 
-  const setUserType = (v) => {
+  const setUserType = useCallback((v) => {
     setUserTypeState(v);
     patchStorage({ userType: v });
-  };
+  }, [patchStorage]);
 
-  const setCoop = (v) => {
+  const setCoop = useCallback((v) => {
     setCoopState(v);
     patchStorage({ coop: v });
-  };
+  }, [patchStorage]);
 
-  const login = ({ token, refreshToken, username, name, userType, coop }) => {
+  const login = useCallback(({ token, refreshToken, username, name, userType, coop }) => {
     setTokenState(token ?? null);
     setRefreshTokenState(refreshToken ?? null);
     setUsernameState(username ?? "");
@@ -102,9 +102,9 @@ export default function AuthProvider({ children }) {
       userType: userType ?? null,
       coop: Array.isArray(coop) ? coop : [],
     });
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setTokenState(null);
     setRefreshTokenState(null);
     setUsernameState("");
@@ -112,7 +112,7 @@ export default function AuthProvider({ children }) {
     setUserTypeState(null);
     setCoopState([]);
     clearStorage();
-  };
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -132,7 +132,7 @@ export default function AuthProvider({ children }) {
       login,
       logout,
     }),
-    [isReady, token, refreshToken, username, name, userType, coop]
+    [isReady, token, refreshToken, username, name, userType, coop, setToken, setRefreshToken, setUsername, setName, setUserType, setCoop, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
