@@ -28,21 +28,28 @@ const routes = [
   { label: "บันทึกการชั่งน้ำหนักแบบ Manual", path: "/truckWeighing/Manual" },
 ];
 
+// ✅ path ที่เป็น sub-flow ของแต่ละ tab
+// key = prefix ของ path, value = tab index
+const pathToTab = [
+  { prefix: "/truckWeighing/Auto", tab: 0 },
+  { prefix: "/truckWeighing/Manual", tab: 1 },
+  { prefix: "/truckWeighing/Loaded", tab: 1 },   // ✅ Loaded อยู่ใน flow ของ Manual
+  { prefix: "/truckWeighing/Unloaded", tab: 1 }, // ✅ Unloaded อยู่ใน flow ของ Manual
+];
+
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { username, name, logout } = useAuth(); // ✅ เพิ่ม username
+  const { username, name, logout } = useAuth();
   const { showToast } = useToast();
 
   const currentTab = React.useMemo(() => {
     const p = location.pathname;
-    const best = routes
-      .map((r, idx) => ({ ...r, idx }))
-      .filter((r) => p === r.path || p.startsWith(r.path + "/"))
-      .sort((a, b) => b.path.length - a.path.length)[0];
-
-    return best ? best.idx : 0; // ✅ default
+    const best = pathToTab
+      .filter((r) => p === r.prefix || p.startsWith(r.prefix + "/") || p.startsWith(r.prefix))
+      .sort((a, b) => b.prefix.length - a.prefix.length)[0];
+    return best ? best.tab : 0;
   }, [location.pathname]);
 
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -91,8 +98,8 @@ export default function Navbar() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 700 }}>
               {name || "-"}
-            </Typography> 
-            
+            </Typography>
+
             <IconButton color="inherit" onClick={openMenu}>
               <AccountCircleIcon />
             </IconButton>
@@ -100,12 +107,9 @@ export default function Navbar() {
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={closeMenu}>
               <MenuItem disabled sx={{ fontWeight: 800, letterSpacing: 0.4 }}>
                 <Box sx={{ lineHeight: 2 }}>
-                  <Typography variant="h8" sx={{ opacity: 1 }}>
+                  <Typography variant="body1" sx={{ opacity: 1, fontWeight: 700 }}>
                     {username || "-"}
                   </Typography>
-                  {/* <Typography variant="body2" sx={{ opacity: 1 }}>
-                    {name || "-"}
-                  </Typography> */}
                 </Box>
               </MenuItem>
 
