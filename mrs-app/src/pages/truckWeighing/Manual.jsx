@@ -135,6 +135,7 @@ export default function TruckWeighingManual() {
         ) : (
           <Box sx={{ mt: 3 }}>
             <Autocomplete
+              disablePortal
               openOnFocus
               autoHighlight
               options={truckList}
