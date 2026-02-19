@@ -9,8 +9,7 @@ function App() {
 
   const fetchAPI = async () => {
     try {
-      const response = await api.get("/");
-      const data = response.data;
+      const data = await api.get("/");
       console.log(data.fruits);
     } catch (error) {
       console.error("Error fetching API:", error);

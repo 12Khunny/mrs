@@ -1,8 +1,5 @@
-import axios from "axios";
+import { createApiClient } from "@mrs/shared-api";
 
-const api = axios.create({
-  baseURL: "http://localhost:5000/api",
-  timeout: 5000,
-});
+const api = createApiClient("http://localhost:5000/api");
 
 export default api;
