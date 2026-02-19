@@ -1,14 +1,37 @@
 # dependencies
 node_modules
-client/node_modules
-server/node_modules
 
-# build files
+# build output
 dist
-client/dist
-server/dist
-release
 build
+release
+out
 
 # electron
 *.exe
+*.dmg
+*.AppImage
+
+# environment variables
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
