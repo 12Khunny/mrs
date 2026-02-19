@@ -4,8 +4,8 @@ import { Eye, EyeOff, Milk } from "lucide-react";
 
 import { login as loginApi } from "@/core/api/authApi";
 import { ApiError } from "@mrs/shared-api";
-import { useAuth } from "@/providers/authProvider";
-import { useToast } from "@/providers/toastProvider";
+import { useAuth } from "@/providers/authContext";
+import { useToast } from "@/providers/toastContext";
 import { Button, Input, Label, Card, CardContent } from "@mrs/ui";
 
 export default function LoginPage() {
@@ -83,7 +83,10 @@ export default function LoginPage() {
                   <h1 className="text-2xl font-bold tracking-tight text-[--color-foreground]">
                     MRS
                   </h1>
-                  <p className="text-sm text-[--color-muted-foreground] mt-0.5">
+                  <h3 className="text-lg font-bold tracking-tight text-[--color-foreground]">
+                    RFID&Milk Receiving System
+                  </h3>
+                  <p className="text-sm text-[--color-muted-foreground] mt-1.5">
                     ระบบรับน้ำนมและระบุตัวตนรถบรรทุกด้วย RFID สำหรับ MSC
                   </p>
                 </div>
@@ -101,6 +104,7 @@ export default function LoginPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={loading}
+                  className="px-4 pr-10"
                 />
               </div>
 
@@ -116,7 +120,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
-                    className="pr-10"
+                    className="px-4 pr-10"
                   />
                   <button
                     type="button"
@@ -135,6 +139,7 @@ export default function LoginPage() {
 
               {/* Submit */}
               <Button
+                variant="outline"
                 type="submit"
                 className="w-full mt-2"
                 size="lg"
@@ -160,3 +165,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { AuthContext } from "./authContext";
 
-const AuthContext = createContext(null);
 const STORAGE_KEY = "mrs_auth_v1";
 
 function readStorage() {
@@ -9,6 +9,7 @@ function readStorage() {
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
+    // Ignore malformed local storage data.
     return null;
   }
 }
@@ -16,110 +17,100 @@ function readStorage() {
 function writeStorage(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {}
+  } catch {
+    // Ignore storage quota/privacy-mode errors.
+  }
 }
 
 function clearStorage() {
   try {
     localStorage.removeItem(STORAGE_KEY);
-  } catch {}
+  } catch {
+    // Ignore storage removal errors.
+  }
+}
+
+function getInitialAuthState() {
+  const saved = readStorage() || {};
+  return {
+    token: saved.token ?? null,
+    refreshToken: saved.refreshToken ?? null,
+    username: saved.username ?? "",
+    name: saved.name ?? "",
+    userType: saved.userType ?? null,
+    coop: Array.isArray(saved.coop) ? saved.coop : [],
+  };
 }
 
 export default function AuthProvider({ children }) {
-  const [isReady, setIsReady] = useState(false);
-
-  const [token, setTokenState] = useState(null);
-  const [refreshToken, setRefreshTokenState] = useState(null);
-
-  const [username, setUsernameState] = useState("");
-  const [name, setNameState] = useState("");
-
-  const [userType, setUserTypeState] = useState(null);
-  const [coop, setCoopState] = useState([]);
-
-  useEffect(() => {
-    const saved = readStorage();
-    if (saved?.token) setTokenState(saved.token);
-
-    if (saved?.username) setUsernameState(saved.username);
-    if (saved?.name) setNameState(saved.name);
-
-    if (saved?.userType != null) setUserTypeState(saved.userType);
-    if (Array.isArray(saved?.coop)) setCoopState(saved.coop);
-
-    setIsReady(true);
-  }, []);
+  const [authState, setAuthState] = useState(getInitialAuthState);
 
   const patchStorage = useCallback((patch) => {
-    const cur = readStorage() || {};
-    writeStorage({ ...cur, ...patch });
+    const current = readStorage() || {};
+    writeStorage({ ...current, ...patch });
   }, []);
 
-  const setToken = useCallback((v) => {
-    setTokenState(v);
-    patchStorage({ token: v });
+  const setToken = useCallback((value) => {
+    setAuthState((prev) => ({ ...prev, token: value }));
+    patchStorage({ token: value });
   }, [patchStorage]);
 
-  const setRefreshToken = useCallback((v) => {
-    setRefreshTokenState(v);
-  }, []);
-
-  const setUsername = useCallback((v) => {
-    setUsernameState(v);
-    patchStorage({ username: v });
+  const setRefreshToken = useCallback((value) => {
+    setAuthState((prev) => ({ ...prev, refreshToken: value }));
+    patchStorage({ refreshToken: value });
   }, [patchStorage]);
 
-  const setName = useCallback((v) => {
-    setNameState(v);
-    patchStorage({ name: v });
+  const setUsername = useCallback((value) => {
+    setAuthState((prev) => ({ ...prev, username: value }));
+    patchStorage({ username: value });
   }, [patchStorage]);
 
-  const setUserType = useCallback((v) => {
-    setUserTypeState(v);
-    patchStorage({ userType: v });
+  const setName = useCallback((value) => {
+    setAuthState((prev) => ({ ...prev, name: value }));
+    patchStorage({ name: value });
   }, [patchStorage]);
 
-  const setCoop = useCallback((v) => {
-    setCoopState(v);
-    patchStorage({ coop: v });
+  const setUserType = useCallback((value) => {
+    setAuthState((prev) => ({ ...prev, userType: value }));
+    patchStorage({ userType: value });
+  }, [patchStorage]);
+
+  const setCoop = useCallback((value) => {
+    const nextCoop = Array.isArray(value) ? value : [];
+    setAuthState((prev) => ({ ...prev, coop: nextCoop }));
+    patchStorage({ coop: nextCoop });
   }, [patchStorage]);
 
   const login = useCallback(({ token, refreshToken, username, name, userType, coop }) => {
-    setTokenState(token ?? null);
-    setRefreshTokenState(refreshToken ?? null);
-    setUsernameState(username ?? "");
-    setNameState(name ?? "");
-    setUserTypeState(userType ?? null);
-    setCoopState(Array.isArray(coop) ? coop : []);
-
-    writeStorage({
+    const nextState = {
       token: token ?? null,
+      refreshToken: refreshToken ?? null,
       username: username ?? "",
       name: name ?? "",
       userType: userType ?? null,
       coop: Array.isArray(coop) ? coop : [],
-    });
+    };
+
+    setAuthState(nextState);
+    writeStorage(nextState);
   }, []);
 
   const logout = useCallback(() => {
-    setTokenState(null);
-    setRefreshTokenState(null);
-    setUsernameState("");
-    setNameState("");
-    setUserTypeState(null);
-    setCoopState([]);
+    setAuthState({
+      token: null,
+      refreshToken: null,
+      username: "",
+      name: "",
+      userType: null,
+      coop: [],
+    });
     clearStorage();
   }, []);
 
   const value = useMemo(
     () => ({
-      isReady,
-      token,
-      refreshToken,
-      username,
-      name,
-      userType,
-      coop,
+      isReady: true,
+      ...authState,
       setToken,
       setRefreshToken,
       setUsername,
@@ -129,10 +120,8 @@ export default function AuthProvider({ children }) {
       login,
       logout,
     }),
-    [isReady, token, refreshToken, username, name, userType, coop, setToken, setRefreshToken, setUsername, setName, setUserType, setCoop, login, logout]
+    [authState, setToken, setRefreshToken, setUsername, setName, setUserType, setCoop, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
-export const useAuth = () => useContext(AuthContext);

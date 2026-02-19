@@ -2,6 +2,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [
@@ -12,10 +16,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "@shared-types": path.resolve(__dirname, "../../packages/shared-types"),
-      "@shared-utils": path.resolve(__dirname, "../../packages/shared-utils"),
-      "@shared-api": path.resolve(__dirname, "../../packages/shared-api"),
-      "@mrs/ui": path.resolve(__dirname, "../../packages/ui/src"),
     },
   },
 

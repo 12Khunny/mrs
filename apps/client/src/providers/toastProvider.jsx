@@ -1,45 +1,31 @@
-import { createContext, useContext, useState, useCallback } from "react";
-import {
-  ToastProvider as RadixToastProvider,
-  ToastViewport,
-  Toast,
-  ToastTitle,
-  ToastClose,
-} from "@mrs/ui";
-
-const ToastContext = createContext(null);
+import { useMemo, useCallback } from "react";
+import { Toaster, toast } from "sonner";
+import { ToastContext } from "./toastContext";
 
 export function ToastProvider({ children }) {
-  const [toasts, setToasts] = useState([]);
-
   const showToast = useCallback((message, variant = "default") => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, variant }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
+    switch (variant) {
+      case "success":
+        toast.success(message);
+        break;
+      case "error":
+        toast.error(message);
+        break;
+      case "warning":
+        toast.warning(message);
+        break;
+      default:
+        toast(message);
+        break;
+    }
   }, []);
 
+  const value = useMemo(() => ({ showToast }), [showToast]);
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
-      <RadixToastProvider swipeDirection="up" duration={3000}>
-        {children}
-
-        {toasts.map((t) => (
-          <Toast key={t.id} variant={t.variant} open={true}>
-            <ToastTitle>{t.message}</ToastTitle>
-            <ToastClose />
-          </Toast>
-        ))}
-
-        <ToastViewport />
-      </RadixToastProvider>
+    <ToastContext.Provider value={value}>
+      {children}
+      <Toaster richColors closeButton position="top-center" />
     </ToastContext.Provider>
   );
-}
-
-export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used within ToastProvider");
-  return ctx;
 }
