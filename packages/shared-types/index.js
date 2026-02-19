@@ -1,9 +1,14 @@
-export const UserRole = {
-  ADMIN: "ADMIN",
-  OPERATOR: "OPERATOR",
+export const LoginRequestDto = {
+  username: "string",
+  password: "string",
 };
 
-export const WeighingStatus = {
-  PENDING: "PENDING",
-  COMPLETED: "COMPLETED",
+export const LoginResponseDto = {
+  accessToken: "string",
+  refreshToken: "string",
+  user: {
+    id: "number",
+    username: "string",
+    role: "string",
+  },
 };
