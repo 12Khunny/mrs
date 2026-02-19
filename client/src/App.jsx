@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import api from "../services/api";
+import axios from 'axios';
 
 function App() {
   const [count, setCount] = useState(0)
 
   const fetchAPI = async () => {
     try {
-      const response = await api.get("");
+      const response = await axios.get("http://localhost:5000/api");
       const data = response.data;
       console.log(data.fruits);
     } catch (error) {
