@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(pnpm --filter client add:*)",
-      "Bash(pnpm install:*)"
-    ]
-  }
-}
