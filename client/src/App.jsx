@@ -1,10 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import api from "../services/api";
 
 function App() {
   const [count, setCount] = useState(0)
+
+  const fetchAPI = async () => {
+    try {
+      const response = await api.get("");
+      const data = response.data;
+      console.log(data.fruits);
+    } catch (error) {
+      console.error("Error fetching API:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAPI();
+  }, []);
 
   return (
     <>
