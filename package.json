@@ -1,27 +1,15 @@
 {
   "name": "mrs",
   "version": "1.0.0",
-  "description": "",
-  "main": "electron/main.js",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "client": "npm run dev --prefix client",
-    "server": "node server/server.js",
-    "electron": "electron .",
-    "dev": "concurrently \"npm run server\" \"npm run client\" \"wait-on http://localhost:5173 && npm run electron\""
+    "dev": "pnpm -r --parallel dev",
+    "dev:client": "pnpm --filter client dev",
+    "dev:server": "pnpm --filter server dev",
+    "dev:electron": "pnpm --filter electron dev",
+    "build": "pnpm -r build"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/12Khunny/mrs.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/12Khunny/mrs/issues"
-  },
-  "homepage": "https://github.com/12Khunny/mrs#readme",
   "devDependencies": {
     "concurrently": "^9.2.1",
     "electron": "^40.5.0",
