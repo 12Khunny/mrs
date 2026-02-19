@@ -1,6 +1,6 @@
 export const loginUser = (username, _password) => {
   return {
-    accessToken: "mock-token",
+    access_token: "mock-token",
     user: {
       id: 1,
       username,

@@ -1,10 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
 
   resolve: {
     alias: {
@@ -12,6 +15,7 @@ export default defineConfig({
       "@shared-types": path.resolve(__dirname, "../../packages/shared-types"),
       "@shared-utils": path.resolve(__dirname, "../../packages/shared-utils"),
       "@shared-api": path.resolve(__dirname, "../../packages/shared-api"),
+      "@mrs/ui": path.resolve(__dirname, "../../packages/ui/src"),
     },
   },
 
