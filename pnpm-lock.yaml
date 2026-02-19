@@ -49,7 +49,7 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
-        specifier: ^5.1.1
+        specifier: ^5.1.4
         version: 5.1.4(vite@7.3.1(@types/node@24.10.13))
       eslint:
         specifier: ^9.39.1
@@ -68,13 +68,26 @@ importers:
         version: 7.3.1(@types/node@24.10.13)
 
   apps/electron:
+    dependencies:
+      '@mrs/shared-api':
+        specifier: workspace:*
+        version: link:../../packages/shared-api
+      '@mrs/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@mrs/shared-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
     devDependencies:
       electron:
-        specifier: ^40.5.0
+        specifier: ^40.6.0
         version: 40.6.0
 
   apps/server:
     dependencies:
+      '@mrs/shared-api':
+        specifier: workspace:*
+        version: link:../../packages/shared-api
       '@mrs/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types

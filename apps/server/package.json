@@ -15,6 +15,7 @@
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "@mrs/shared-api": "workspace:*",
     "@mrs/shared-types": "workspace:*",
     "@mrs/shared-utils": "workspace:*"
   }

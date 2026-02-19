@@ -7,7 +7,12 @@
     "dev": "electron .",
     "start": "electron ."
   },
+  "dependencies": {
+  "@mrs/shared-api": "workspace:*",
+  "@mrs/shared-types": "workspace:*",
+  "@mrs/shared-utils": "workspace:*"
+  },
   "devDependencies": {
-    "electron": "^40.5.0"
+    "electron": "^40.6.0"
   }
 }
