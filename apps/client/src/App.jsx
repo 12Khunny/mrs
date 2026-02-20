@@ -1,7 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import LoginPage from './page/auth/LoginPage'
-import RequireAuth from './core/auth/RequireAuth'
-import AppLayout from './core/layout/AppLayout'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import LoginPage from "./page/auth/LoginPage";
+import RequireAuth from "./core/auth/RequireAuth";
+import AppLayout from "./core/layout/AppLayout";
+import AutoPage from "./page/truckWeighing/AutoPage";
+import ManualPage from "./page/truckWeighing/ManualPage";
+import LoadedPage from "./page/truckWeighing/LoadedPage";
+import UnloadedPage from "./page/truckWeighing/UnloadedPage";
 
 function App() {
   return (
@@ -9,21 +13,52 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Protected routes — จะเพิ่มหน้าอื่น ๆ ต่อไปที่นี่ */}
-        <Route path="/truckWeighing/Auto" element={
-          <RequireAuth>
-            <AppLayout>
-              <h1>TruckWeighing Auto</h1>
-            </AppLayout>
-          </RequireAuth>
-        } />
+        <Route
+          path="/truckWeighing/Auto"
+          element={
+            <RequireAuth>
+              <AppLayout>
+                <AutoPage />
+              </AppLayout>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/truckWeighing/Manual"
+          element={
+            <RequireAuth>
+              <AppLayout>
+                <ManualPage />
+              </AppLayout>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/truckWeighing/Loaded"
+          element={
+            <RequireAuth>
+              <AppLayout>
+                <LoadedPage />
+              </AppLayout>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/truckWeighing/Unloaded/:id"
+          element={
+            <RequireAuth>
+              <AppLayout>
+                <UnloadedPage />
+              </AppLayout>
+            </RequireAuth>
+          }
+        />
 
-        {/* Default redirect */}
         <Route path="/" element={<Navigate to="/truckWeighing/Auto" replace />} />
         <Route path="*" element={<Navigate to="/truckWeighing/Auto" replace />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

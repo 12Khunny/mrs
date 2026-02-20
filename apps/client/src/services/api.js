@@ -1,5 +1,6 @@
 import { createApiClient } from "@mrs/shared-api";
 
-const api = createApiClient("http://localhost:5000/api");
+const baseURL = import.meta.env.VITE_API_URL ?? "/api";
+const api = createApiClient(baseURL);
 
 export default api;

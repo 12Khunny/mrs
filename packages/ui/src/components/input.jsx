@@ -6,9 +6,9 @@ const Input = React.forwardRef(({ className, type, ...props }, ref) => {
     <input
       type={type}
       className={cn(
-        "flex h-9 w-full rounded-md border border-[--color-input] bg-transparent px-3 py-1 text-sm shadow-sm transition-colors",
-        "placeholder:text-[--color-muted-foreground]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--color-ring]",
+        "flex h-9 w-full rounded-md border border-[var(--color-input)] bg-transparent px-3 py-1 text-sm shadow-sm transition-colors",
+        "placeholder:text-[var(--color-muted-foreground)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
@@ -20,3 +20,4 @@ const Input = React.forwardRef(({ className, type, ...props }, ref) => {
 Input.displayName = "Input";
 
 export { Input };
+

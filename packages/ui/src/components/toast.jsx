@@ -23,11 +23,11 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-[--color-card] border-[--color-border] text-[--color-foreground]",
-        success: "bg-[--color-success] border-[--color-success] text-[--color-success-foreground]",
-        error: "bg-[--color-destructive] border-[--color-destructive] text-[--color-destructive-foreground]",
-        warning: "bg-[--color-warning] border-[--color-warning] text-[--color-warning-foreground]",
-        info: "bg-[--color-primary] border-[--color-primary] text-[--color-primary-foreground]",
+        default: "bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)]",
+        success: "bg-[var(--color-success)] border-[var(--color-success)] text-[var(--color-success-foreground)]",
+        error: "bg-[var(--color-destructive)] border-[var(--color-destructive)] text-[var(--color-destructive-foreground)]",
+        warning: "bg-[var(--color-warning)] border-[var(--color-warning)] text-[var(--color-warning-foreground)]",
+        info: "bg-[var(--color-primary)] border-[var(--color-primary)] text-[var(--color-primary-foreground)]",
       },
     },
     defaultVariants: { variant: "default" },
@@ -91,3 +91,4 @@ export {
   ToastAction,
   ToastClose,
 };
+

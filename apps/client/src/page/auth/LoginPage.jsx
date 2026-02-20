@@ -38,7 +38,7 @@ export default function LoginPage() {
       const userObj = data.user || {};
 
       login({
-        token: data.access_token ?? data.token ?? null,
+        token: data.access_token ?? data.token ?? "cookie",
         refreshToken: data.refresh_token ?? data.refreshToken ?? null,
         username: data.username ?? userObj.username ?? username ?? "",
         name: data.name ?? userObj.name ?? "",
@@ -68,7 +68,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[--color-muted] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-muted)] px-4">
       <div className="w-full max-w-sm space-y-6">
         {/* Card */}
         <Card className="shadow-md">
@@ -76,17 +76,17 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Logo + Title */}
               <div className="flex flex-col items-center gap-3">
-                <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[--color-primary] shadow-lg">
+                <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[var] shadow-lg">
                   <Milk className="w-8 h-8 text-black" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-2xl font-bold tracking-tight text-[--color-foreground]">
+                  <h1 className="text-2xl font-bold tracking-tight text-[var(--color-foreground)]">
                     MRS
                   </h1>
-                  <h3 className="text-lg font-bold tracking-tight text-[--color-foreground]">
+                  <h3 className="text-lg font-bold tracking-tight text-[var(--color-foreground)]">
                     RFID&Milk Receiving System
                   </h3>
-                  <p className="text-sm text-[--color-muted-foreground] mt-1.5">
+                  <p className="text-sm text-[var(--color-muted-foreground)] mt-1.5">
                     ระบบรับน้ำนมและระบุตัวตนรถบรรทุกด้วย RFID สำหรับ MSC
                   </p>
                 </div>
@@ -126,7 +126,7 @@ export default function LoginPage() {
                     type="button"
                     tabIndex={-1}
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[--color-muted-foreground] hover:text-[--color-foreground] transition-colors"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -139,9 +139,9 @@ export default function LoginPage() {
 
               {/* Submit */}
               <Button
-                variant="outline"
+                variant="default"
                 type="submit"
-                className="w-full mt-2"
+                className="w-full mt-2 text-white"
                 size="lg"
                 disabled={loading}
               >
@@ -158,11 +158,12 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-[--color-muted-foreground]">
+        <p className="text-center text-xs text-[var(--color-muted-foreground)]">
           MILK SUPPLY CHAIN · MRS v1.0
         </p>
       </div>
     </div>
   );
 }
+
 
