@@ -1,12 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap");
 @import "tailwindcss";
+@source "./**/*.{js,jsx}";
+@source "../../packages/ui/src/**/*.{js,jsx}";
 
 @theme {
   /* ── Font ── */
   --font-sans: "Noto Sans Thai", ui-sans-serif, system-ui, sans-serif;
 
   /* ── Brand Colors (MRS) ── */
-  --color-primary: oklch(0.55 0.18 250);
+  --color-primary: oklch(0.75 0.15 235);
   --color-primary-foreground: oklch(0.98 0 0);
 
   /* ── shadcn-style semantic tokens ── */
@@ -19,12 +21,12 @@
   --color-muted: oklch(0.96 0 0);
   --color-muted-foreground: oklch(0.50 0 0);
 
-  --color-border: oklch(0.90 0 0);
-  --color-input: oklch(0.90 0 0);
-  --color-ring: oklch(0.55 0.18 250);
+  --color-border: oklch(0.9 0 0);
+  --color-input: oklch(0.1 0 0);
+  --color-ring: oklch(0.75 0.16 234);
 
-  --color-destructive: oklch(0.60 0.22 27);
-  --color-destructive-foreground: oklch(0.98 0 0);
+  --color-destructive: oklch(0.67 0.21 25);
+  --color-destructive-foreground: oklch(0.67 0.21 25);
 
   --color-success: oklch(0.55 0.17 145);
   --color-success-foreground: oklch(0.98 0 0);

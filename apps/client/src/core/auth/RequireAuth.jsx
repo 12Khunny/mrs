@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/providers/authProvider";
+import { useAuth } from "@/providers/authContext";
 
 export default function RequireAuth({ children }) {
   const { isReady, token } = useAuth();

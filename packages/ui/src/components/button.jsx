@@ -4,24 +4,24 @@ import { cva } from "class-variance-authority";
 import { cn } from "../lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "bg-[--color-primary] text-[--color-primary-foreground] hover:bg-[--color-primary]/90",
+          "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] hover:opacity-90",
         destructive:
-          "bg-[--color-destructive] text-[--color-destructive-foreground] hover:bg-[--color-destructive]/90",
+          "bg-[var(--color-destructive)] text-[var(--color-destructive-foreground)] hover:opacity-90",
         success:
-          "bg-[--color-success] text-[--color-success-foreground] hover:bg-[--color-success]/90",
+          "bg-[var(--color-success)] text-[var(--color-success-foreground)] hover:opacity-90",
         outline:
-          "border border-[--color-border] bg-transparent hover:bg-[--color-muted] hover:text-[--color-foreground]",
+          "border border-[var(--color-border)] bg-transparent hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
         secondary:
-          "bg-[--color-muted] text-[--color-foreground] hover:bg-[--color-muted]/80",
+          "bg-[var(--color-muted)] text-[var(--color-foreground)] hover:opacity-80",
         ghost:
-          "hover:bg-[--color-muted] hover:text-[--color-foreground]",
+          "hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
         link:
-          "text-[--color-primary] underline-offset-4 hover:underline",
+          "text-[var(--color-primary)] underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-4 py-2",
