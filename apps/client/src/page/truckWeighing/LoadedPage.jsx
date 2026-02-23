@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "@/services/api";
 import { useToast } from "@/providers/toastContext";
@@ -42,6 +42,13 @@ export default function LoadedPage() {
   const [loadedDate, setLoadedDate] = useState(toISODate());
   const [loadedTime, setLoadedTime] = useState(toCurrentTime());
   const [loadedWeight, setLoadedWeight] = useState("");
+  const [errors, setErrors] = useState({
+    truck: false,
+    loadedDate: false,
+    loadedTime: false,
+    loadedWeight: false,
+    coop: false,
+  });
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -49,6 +56,9 @@ export default function LoadedPage() {
   const ownerName = selectedTruck?.owner ?? "";
 
   const [milkCompartmentList, setMilkCompartmentList] = useState([]);
+  const [coopSearchByRow, setCoopSearchByRow] = useState({});
+  const [coopOpenByRow, setCoopOpenByRow] = useState({});
+  const coopPickerRefs = useRef({});
 
   useEffect(() => {
     const run = async () => {
@@ -74,6 +84,8 @@ export default function LoadedPage() {
   useEffect(() => {
     if (!channelNumber) {
       setMilkCompartmentList([]);
+      setCoopSearchByRow({});
+      setCoopOpenByRow({});
       return;
     }
     if (checked) {
@@ -87,7 +99,22 @@ export default function LoadedPage() {
         }))
       );
     }
+    setCoopSearchByRow({});
+    setCoopOpenByRow({});
   }, [channelNumber, checked]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      const isInsideAnyPicker = Object.values(coopPickerRefs.current).some(
+        (el) => el && el.contains(event.target)
+      );
+      if (!isInsideAnyPicker) {
+        setCoopOpenByRow({});
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   const handleCoopChange = (rowIndex, selectedIds) => {
     setMilkCompartmentList((prev) => {
@@ -97,23 +124,42 @@ export default function LoadedPage() {
       next[rowIndex] = { ...next[rowIndex], coop: selected };
       return next;
     });
+
+    setErrors((prev) => ({ ...prev, coop: false }));
+  };
+
+  const removeCoopInRow = (rowIndex, coopId) => {
+    const current = milkCompartmentList[rowIndex]?.coop ?? [];
+    const nextIds = current
+      .filter((c) => String(c.coop_id) !== String(coopId))
+      .map((c) => String(c.coop_id));
+    handleCoopChange(rowIndex, nextIds);
   };
 
   const validate = () => {
-    if (!selectedTruck) {
+    const nextErrors = {
+      truck: !selectedTruck,
+      loadedDate: !loadedDate,
+      loadedTime: !loadedTime,
+      loadedWeight: !loadedWeight || Number.isNaN(parseFloat(loadedWeight)),
+      coop: milkCompartmentList.every((item) => item.coop.length === 0),
+    };
+
+    setErrors(nextErrors);
+
+    if (nextErrors.truck) {
       showToast("กรุณาเลือกทะเบียนรถ", "warning");
       return false;
     }
-    if (!loadedDate || !loadedTime) {
+    if (nextErrors.loadedDate || nextErrors.loadedTime) {
       showToast("กรุณาระบุวันที่และเวลา", "warning");
       return false;
     }
-    if (!loadedWeight || isNaN(parseFloat(loadedWeight))) {
+    if (nextErrors.loadedWeight) {
       showToast("กรุณาระบุน้ำหนัก", "warning");
       return false;
     }
-    const isCoopNull = milkCompartmentList.every((item) => item.coop.length === 0);
-    if (isCoopNull) {
+    if (nextErrors.coop) {
       showToast("กรุณาเลือกศูนย์/สหกรณ์ที่ส่งน้ำนม", "warning");
       return false;
     }
@@ -174,134 +220,281 @@ export default function LoadedPage() {
             <p className="text-sm text-[var(--color-muted-foreground)]">กำลังโหลดข้อมูล...</p>
           ) : (
             <>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-2">
-                  <Label>ทะเบียนรถ *</Label>
-                  <Input value={selectedTruck?.truck_license ?? ""} disabled placeholder="ทะเบียนรถ" />
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>
+                      ทะเบียนรถ : <span className="text-[var(--color-destructive)]">*</span>
+                    </Label>
+                    <Input
+                      value={selectedTruck?.truck_license ?? ""}
+                      disabled
+                      aria-invalid={errors.truck}
+                      placeholder="ทะเบียนรถ"
+                      className="bg-[var(--color-muted)] text-[var(--color-muted-foreground)] disabled:opacity-100"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>เจ้าของรถ : </Label>
+                    <Input
+                      value={ownerName}
+                      disabled
+                      placeholder="เจ้าของรถ"
+                      className="bg-[var(--color-muted)] text-[var(--color-muted-foreground)] disabled:opacity-100"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>ชื่อ-นามสกุลคนขับรถ :</Label>
+                    <Input
+                      value={driverName}
+                      onChange={(e) => setDriverName(e.target.value)}
+                      placeholder="ชื่อ-นามสกุลคนขับรถ"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>เจ้าของรถ</Label>
-                  <Input value={ownerName} disabled placeholder="เจ้าของรถ" />
-                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>
+                      วันที่ชั่งน้ำหนัก : <span className="text-[var(--color-destructive)]">*</span>
+                    </Label>
+                    <Input
+                      type="date"
+                      value={loadedDate}
+                      aria-invalid={errors.loadedDate}
+                      onChange={(e) => {
+                        setLoadedDate(e.target.value);
+                        setErrors((prev) => ({ ...prev, loadedDate: false }));
+                      }}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>ชื่อ-นามสกุลคนขับรถ</Label>
-                  <Input
-                    value={driverName}
-                    onChange={(e) => setDriverName(e.target.value)}
-                    placeholder="ชื่อ-นามสกุลคนขับรถ"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label>
+                      เวลาชั่งน้ำหนัก : <span className="text-[var(--color-destructive)]">*</span>
+                    </Label>
+                    <Input
+                      type="time"
+                      value={loadedTime}
+                      aria-invalid={errors.loadedTime}
+                      onChange={(e) => {
+                        setLoadedTime(e.target.value);
+                        setErrors((prev) => ({ ...prev, loadedTime: false }));
+                      }}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>วันที่ชั่งน้ำหนัก *</Label>
-                  <Input type="date" value={loadedDate} onChange={(e) => setLoadedDate(e.target.value)} />
-                </div>
+                  <div className="space-y-2">
+                    <Label>
+                      น้ำหนักรถพร้อมน้ำนม (กก.) : <span className="text-[var(--color-destructive)]">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      value={loadedWeight}
+                      aria-invalid={errors.loadedWeight}
+                      inputMode="decimal"
+                      step="0.01"
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === "" || /^\d*\.?\d{0,2}$/.test(next)) {
+                          setLoadedWeight(next);
+                          setErrors((prev) => ({ ...prev, loadedWeight: false }));
+                        }
+                      }}
+                      onBlur={() => {
+                        if (loadedWeight === "") return;
+                        const num = Number(loadedWeight);
+                        if (!Number.isNaN(num)) {
+                          setLoadedWeight(num.toFixed(2));
+                        }
+                      }}
+                      placeholder="น้ำหนักรถพร้อมน้ำนม"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>เวลาชั่งน้ำหนัก *</Label>
-                  <Input type="time" value={loadedTime} onChange={(e) => setLoadedTime(e.target.value)} />
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>น้ำหนักรถพร้อมน้ำนม (กก.) *</Label>
-                  <Input
-                    type="number"
-                    value={loadedWeight}
-                    inputMode="decimal"
-                    step="0.01"
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      if (next === "" || /^\d*\.?\d{0,2}$/.test(next)) {
-                        setLoadedWeight(next);
-                      }
-                    }}
-                    onBlur={() => {
-                      if (loadedWeight === "") return;
-                      const num = Number(loadedWeight);
-                      if (!Number.isNaN(num)) {
-                        setLoadedWeight(num.toFixed(2));
-                      }
-                    }}
-                    placeholder="น้ำหนักรถพร้อมน้ำนม"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    id="whole-truck"
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) => setChecked(e.target.checked)}
-                    className="h-4 w-4"
-                  />
-                  <Label htmlFor="whole-truck">ลงทั้งคัน</Label>
-                </div>
-              </div>
-
-              {selectedTruck && milkCompartmentList.length > 0 && (
+              {selectedTruck && milkCompartmentList.length > 0 ? (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
-                    บันทึกข้อมูลช่องน้ำนม
-                  </h3>
-                  {milkCompartmentList.map((row, idx) => (
-                    <div key={idx} className="grid gap-3 md:grid-cols-2">
-                      <div className="text-sm font-medium">
-                        ช่อง: {Array.isArray(row.channel) ? row.channel.join(",") : row.channel}
-                      </div>
-                      <div className="space-y-2">
-                        {row.coop.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {row.coop.map((c) => (
-                              <span
-                                key={c.coop_id}
-                                className="rounded-md bg-[color:var(--color-muted)] px-2 py-1 text-xs text-[color:var(--color-foreground)]"
-                              >
-                                {c.coop_name}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-[color:var(--color-muted-foreground)]">
-                            เลือกศูนย์/สหกรณ์
-                          </div>
-                        )}
-                        <div className="max-h-40 overflow-auto rounded-md border border-[color:var(--color-input)] bg-transparent p-2 text-sm">
-                          {coopList.map((c) => {
-                            const isChecked = row.coop.some(
-                              (x) => String(x.coop_id) === String(c.coop_id)
-                            );
-                            return (
-                              <label key={c.coop_id} className="flex items-center gap-2 py-1">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={(e) => {
-                                    const current = row.coop.map((x) => String(x.coop_id));
-                                    const nextIds = e.target.checked
-                                      ? [...current, String(c.coop_id)]
-                                      : current.filter((id) => id !== String(c.coop_id));
-                                    handleCoopChange(idx, nextIds);
-                                  }}
-                                />
-                                <span>{c.coop_name}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
+                      บันทึกข้อมูลช่องน้ำนม
+                    </h3>
+                    <label className="inline-flex items-center gap-2 text-sm font-medium">
+                      <input
+                        id="whole-truck"
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => setChecked(e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <span>ลงทั้งคัน</span>
+                    </label>
+                  </div>
+                  <div className="overflow-x-auto rounded-md border border-[var(--color-border)]">
+                    <table className="w-full border-collapse text-sm">
+                      <thead className="bg-[color:var(--color-muted)]/40">
+                        <tr>
+                          <th className="w-[100px] border-b border-[var(--color-border)] px-4 py-3 text-center font-semibold">
+                            ช่อง
+                          </th>
+                          <th className="border-b border-[var(--color-border)] px-4 py-3 text-left font-semibold">
+                            ศูนย์ ฯ / สหกรณ์ที่ส่งน้ำนม
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {milkCompartmentList.map((row, idx) => {
+                          const query = (coopSearchByRow[idx] ?? "").trim().toLowerCase();
+                          const isOpen = Boolean(coopOpenByRow[idx]);
+                          const selectedIdSet = new Set(
+                            row.coop.map((x) => String(x.coop_id))
+                          );
+                          const filteredCoops = coopList.filter((c) => {
+                            if (selectedIdSet.has(String(c?.coop_id))) return false;
+                            if (!query) return true;
+                            const name = (c?.coop_name ?? "").toLowerCase();
+                            const id = String(c?.coop_id ?? "");
+                            return name.includes(query) || id.includes(query);
+                          });
+
+                          return (
+                            <tr key={idx} className="align-top hover:bg-[color:var(--color-muted)]/20">
+                              <td className="border-b border-[var(--color-border)] px-4 py-3 text-center font-semibold">
+                                {Array.isArray(row.channel) ? row.channel.join(",") : row.channel}
+                              </td>
+                              <td className="border-b border-[var(--color-border)] px-4 py-3">
+                                <div
+                                  role="group"
+                                  aria-label={`milk-coop-selection-${idx + 1}`}
+                                  aria-invalid={errors.coop}
+                                  className="space-y-2"
+                                >
+                                  <div className="flex flex-wrap gap-1">
+                                    {row.coop.map((c) => (
+                                      <span
+                                        key={c.coop_id}
+                                        className="inline-flex items-center gap-1 rounded-md bg-[color:var(--color-muted)] px-2 py-1 text-xs text-[color:var(--color-foreground)]"
+                                      >
+                                        {c.coop_name}
+                                        <button
+                                          type="button"
+                                          className="rounded px-1 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+                                          onClick={() => removeCoopInRow(idx, c.coop_id)}
+                                          aria-label={`remove-coop-${c.coop_id}`}
+                                        >
+                                          ×
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+
+                                  <div
+                                    ref={(el) => {
+                                      if (el) coopPickerRefs.current[idx] = el;
+                                      else delete coopPickerRefs.current[idx];
+                                    }}
+                                    className="relative"
+                                  >
+                                    <Input
+                                      value={coopSearchByRow[idx] ?? ""}
+                                      onFocus={() =>
+                                        setCoopOpenByRow((prev) => ({ ...prev, [idx]: true }))
+                                      }
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Escape") {
+                                          setCoopOpenByRow((prev) => ({ ...prev, [idx]: false }));
+                                        }
+                                      }}
+                                      onChange={(e) => {
+                                        setCoopSearchByRow((prev) => ({
+                                          ...prev,
+                                          [idx]: e.target.value,
+                                        }));
+                                        setCoopOpenByRow((prev) => ({ ...prev, [idx]: true }));
+                                      }}
+                                      aria-expanded={isOpen}
+                                      aria-controls={`coop-dropdown-${idx}`}
+                                      className="pr-10"
+                                      placeholder={row.coop.length === 0 ? "ค้นหาสหกรณ์..." : "ค้นหาเพิ่ม..."}
+                                    />
+                                    <button
+                                      type="button"
+                                      aria-label={`toggle-coop-dropdown-${idx}`}
+                                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+                                      onClick={() =>
+                                        setCoopOpenByRow((prev) => ({ ...prev, [idx]: !prev[idx] }))
+                                      }
+                                    >
+                                      {isOpen ? "▴" : "▾"}
+                                    </button>
+
+                                    {isOpen && (
+                                      <div
+                                        id={`coop-dropdown-${idx}`}
+                                        className="absolute z-30 mt-1 w-full rounded-md border border-[color:var(--color-input)] bg-[var(--color-card)] p-2 shadow-lg"
+                                      >
+                                        <div className="max-h-44 overflow-auto">
+                                          {filteredCoops.length === 0 ? (
+                                            <p className="py-2 text-xs text-[var(--color-muted-foreground)]">
+                                              ไม่พบสหกรณ์
+                                            </p>
+                                          ) : (
+                                            filteredCoops.map((c) => {
+                                              const isChecked = row.coop.some(
+                                                (x) => String(x.coop_id) === String(c.coop_id)
+                                              );
+                                              return (
+                                                <label key={c.coop_id} className="flex items-center gap-2 py-1">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={(e) => {
+                                                      const current = row.coop.map((x) =>
+                                                        String(x.coop_id)
+                                                      );
+                                                      const nextIds = e.target.checked
+                                                        ? [...current, String(c.coop_id)]
+                                                        : current.filter(
+                                                            (id) => id !== String(c.coop_id)
+                                                          );
+                                                      handleCoopChange(idx, nextIds);
+                                                    }}
+                                                  />
+                                                  <span>{c.coop_name}</span>
+                                                </label>
+                                              );
+                                            })
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
+              ) : (
+                !selectedTruck && (
+                  <p className="text-sm text-[var(--color-muted-foreground)]">
+                    กรุณาเลือกทะเบียนรถก่อน
+                  </p>
+                )
               )}
 
               <div className="flex flex-wrap justify-end gap-2">
                 <Button variant="outline" onClick={() => navigate(-1)} disabled={saving}>
                   ยกเลิก
                 </Button>
-                <Button variant="default" onClick={onSubmit} disabled={saving}>
+                <Button variant="default" onClick={onSubmit} disabled={saving} className="text-white">
                   {saving ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
                 </Button>
               </div>
@@ -331,5 +524,4 @@ export default function LoadedPage() {
     </div>
   );
 }
-
 

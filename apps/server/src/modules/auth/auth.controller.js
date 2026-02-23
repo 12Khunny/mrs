@@ -1,4 +1,4 @@
-const BASE_URL = process.env.MRS_API_BASE;
+const BASE_URL = process.env.MRS_API_BASE ?? "http://localhost:8900";
 const COOKIE_NAME = process.env.MRS_AUTH_COOKIE ?? "mrs_auth";
 
 export const login = async (req, res) => {

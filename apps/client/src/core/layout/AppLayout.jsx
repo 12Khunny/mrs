@@ -107,7 +107,7 @@ export default function AppLayout({ children }) {
                 <DropdownMenu.Separator className="my-1 h-px bg-[var(--color-border)]" />
                 <DropdownMenu.Item
                   onSelect={openLogoutDialog}
-                  className="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-[var(--color-foreground)] outline-none hover:bg-[var(--color-muted)] focus:bg-[var(--color-muted)]"
+                  className="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-red-600 outline-none hover:bg-red-600/10 focus:bg-red-600/10"
                 >
                   <LogOut className="w-4 h-4" />
                   ออกจากระบบ
@@ -141,7 +141,7 @@ export default function AppLayout({ children }) {
               <Button
                 variant="outline"
                 onClick={handleConfirmLogout}
-                className="px-6 text-[var(--color-destructive-foreground)]"
+                className="px-6 text-red-600 border-red-600 hover:bg-red-600/10 focus:bg-red-600/10"
               >
                 ออกจากระบบ
               </Button>

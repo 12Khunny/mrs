@@ -76,7 +76,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Logo + Title */}
               <div className="flex flex-col items-center gap-3">
-                <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[var] shadow-lg">
+                <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-primary)] shadow-lg">
                   <Milk className="w-8 h-8 text-black" />
                 </div>
                 <div className="text-center">

@@ -9,7 +9,7 @@
 
   /* ── Brand Colors (MRS) ── */
   --color-primary: oklch(0.75 0.15 235);
-  --color-primary-foreground: oklch(0.98 0 0);
+  --color-primary-foreground: oklch(1 0 0);
 
   /* ── shadcn-style semantic tokens ── */
   --color-background: oklch(1 0 0);
@@ -26,7 +26,7 @@
   --color-ring: oklch(0.75 0.16 234);
 
   --color-destructive: oklch(0.67 0.21 25);
-  --color-destructive-foreground: oklch(0.67 0.21 25);
+  --color-destructive-foreground: oklch(1 0 0);
 
   --color-success: oklch(0.55 0.17 145);
   --color-success-foreground: oklch(0.98 0 0);

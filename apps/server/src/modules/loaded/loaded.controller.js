@@ -1,4 +1,4 @@
-const BASE_URL = process.env.MRS_API_BASE ?? "https://api.zyanwoa.com/__testapi2__";
+const BASE_URL = process.env.MRS_API_BASE ?? "http://localhost:8900";
 
 async function forward(req, res, path, options = {}) {
   const headers = {};
