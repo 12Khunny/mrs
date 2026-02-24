@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./page/auth/LoginPage";
 import RequireAuth from "./core/auth/RequireAuth";
 import AppLayout from "./core/layout/AppLayout";
@@ -8,8 +8,10 @@ import LoadedPage from "./page/truckWeighing/LoadedPage";
 import UnloadedPage from "./page/truckWeighing/UnloadedPage";
 
 function App() {
+  const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
+
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
@@ -57,7 +59,7 @@ function App() {
         <Route path="/" element={<Navigate to="/truckWeighing/Auto" replace />} />
         <Route path="*" element={<Navigate to="/truckWeighing/Auto" replace />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 

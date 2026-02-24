@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/providers/authContext";
 import { useToast } from "@/providers/toastContext";
 import { Button } from "@mrs/ui";
-import { CircleUserRound, LogOut, User } from "lucide-react";
+import { Check, ChevronRight, CircleUserRound, LogOut, Moon, Sun, User } from "lucide-react";
 
 const routes = [
   { label: "บันทึกการชั่งน้ำหนัก", path: "/truckWeighing/Auto" },
@@ -18,6 +18,20 @@ const pathToTab = [
   { prefix: "/truckWeighing/Unloaded", tab: 1 },
 ];
 
+const DEFAULT_DISPLAY_SIZE = "medium";
+const DEFAULT_THEME = "light";
+
+const DISPLAY_SIZES = [
+  { value: "small", label: "เล็ก" },
+  { value: "medium", label: "กลาง" },
+  { value: "large", label: "ใหญ่" },
+];
+
+const THEMES = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+];
+
 export default function AppLayout({ children }) {
   const { name, username, logout } = useAuth();
   const { showToast } = useToast();
@@ -26,6 +40,8 @@ export default function AppLayout({ children }) {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [displaySize, setDisplaySize] = useState(DEFAULT_DISPLAY_SIZE);
+  const [theme, setTheme] = useState(DEFAULT_THEME);
 
   const currentTab = useMemo(() => {
     const p = location.pathname;
@@ -39,6 +55,14 @@ export default function AppLayout({ children }) {
     setMenuOpen(false);
     setConfirmOpen(true);
   };
+
+  useEffect(() => {
+    document.documentElement.dataset.displaySize = displaySize;
+  }, [displaySize]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   const handleConfirmLogout = () => {
     setConfirmOpen(false);
@@ -105,6 +129,64 @@ export default function AppLayout({ children }) {
                   {username || "-"}
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator className="my-1 h-px bg-[var(--color-border)]" />
+
+                <DropdownMenu.Sub>
+                  <DropdownMenu.SubTrigger className="flex w-full cursor-pointer select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm text-[var(--color-foreground)] outline-none hover:bg-[var(--color-muted)] focus:bg-[var(--color-muted)]">
+                    <span>Display Size</span>
+                    <ChevronRight className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+                  </DropdownMenu.SubTrigger>
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.SubContent className="z-50 min-w-[160px] rounded-md border border-[var(--color-border)] bg-[color:var(--color-card)] p-2 shadow-md">
+                      <DropdownMenu.RadioGroup value={displaySize} onValueChange={setDisplaySize}>
+                        {DISPLAY_SIZES.map((item) => (
+                          <DropdownMenu.RadioItem
+                            key={item.value}
+                            value={item.value}
+                            className="flex cursor-pointer select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm text-[var(--color-foreground)] outline-none hover:bg-[var(--color-muted)] focus:bg-[var(--color-muted)]"
+                          >
+                            <span>{item.label}</span>
+                            <DropdownMenu.ItemIndicator>
+                              <Check className="h-4 w-4 text-[var(--color-primary)]" />
+                            </DropdownMenu.ItemIndicator>
+                          </DropdownMenu.RadioItem>
+                        ))}
+                      </DropdownMenu.RadioGroup>
+                    </DropdownMenu.SubContent>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Sub>
+
+                <DropdownMenu.Sub>
+                  <DropdownMenu.SubTrigger className="flex w-full cursor-pointer select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm text-[var(--color-foreground)] outline-none hover:bg-[var(--color-muted)] focus:bg-[var(--color-muted)]">
+                    <span>Theme</span>
+                    <ChevronRight className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+                  </DropdownMenu.SubTrigger>
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.SubContent className="z-50 min-w-[160px] rounded-md border border-[var(--color-border)] bg-[color:var(--color-card)] p-2 shadow-md">
+                      <DropdownMenu.RadioGroup value={theme} onValueChange={setTheme}>
+                        {THEMES.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <DropdownMenu.RadioItem
+                              key={item.value}
+                              value={item.value}
+                              className="flex cursor-pointer select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm text-[var(--color-foreground)] outline-none hover:bg-[var(--color-muted)] focus:bg-[var(--color-muted)]"
+                            >
+                              <span className="inline-flex items-center gap-2">
+                                <Icon className="h-4 w-4" />
+                                {item.label}
+                              </span>
+                              <DropdownMenu.ItemIndicator>
+                                <Check className="h-4 w-4 text-[var(--color-primary)]" />
+                              </DropdownMenu.ItemIndicator>
+                            </DropdownMenu.RadioItem>
+                          );
+                        })}
+                      </DropdownMenu.RadioGroup>
+                    </DropdownMenu.SubContent>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Sub>
+
+                <DropdownMenu.Separator className="my-1 h-px bg-[var(--color-border)]" />
                 <DropdownMenu.Item
                   onSelect={openLogoutDialog}
                   className="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-red-600 outline-none hover:bg-red-600/10 focus:bg-red-600/10"
@@ -152,5 +234,3 @@ export default function AppLayout({ children }) {
     </div>
   );
 }
-
-

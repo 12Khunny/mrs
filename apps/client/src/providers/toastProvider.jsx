@@ -25,7 +25,14 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <Toaster richColors closeButton position="top-center" />
+      <Toaster
+        richColors
+        closeButton
+        position="top-center"
+        toastOptions={{
+          className: "mrs-toast",
+        }}
+      />
     </ToastContext.Provider>
   );
 }

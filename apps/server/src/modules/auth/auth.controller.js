@@ -1,6 +1,26 @@
 const BASE_URL = process.env.MRS_API_BASE ?? "http://localhost:8900";
 const COOKIE_NAME = process.env.MRS_AUTH_COOKIE ?? "mrs_auth";
 
+function extractToken(data) {
+  if (!data || typeof data !== "object") return null;
+  return (
+    data?.access_token ??
+    data?.token ??
+    data?.accessToken ??
+    data?.jwt ??
+    data?.id_token ??
+    data?.content?.access_token ??
+    data?.content?.token ??
+    data?.content?.accessToken ??
+    data?.content?.jwt ??
+    data?.content?.id_token ??
+    data?.data?.access_token ??
+    data?.data?.token ??
+    data?.data?.accessToken ??
+    null
+  );
+}
+
 export const login = async (req, res) => {
   const response = await fetch(`${BASE_URL}/auth/login`, {
     method: "POST",
@@ -21,8 +41,8 @@ export const login = async (req, res) => {
     return;
   }
 
-  const token =
-    data?.access_token ?? data?.token ?? data?.accessToken ?? data?.content?.access_token ?? null;
+  const upstreamSetCookie = response.headers.get("set-cookie");
+  const token = extractToken(data);
   if (token) {
     res.cookie(COOKIE_NAME, token, {
       httpOnly: true,
@@ -30,6 +50,8 @@ export const login = async (req, res) => {
       sameSite: "lax",
       path: "/",
     });
+  } else if (upstreamSetCookie) {
+    res.setHeader("set-cookie", upstreamSetCookie);
   }
 
   res.json(data);
@@ -55,8 +77,8 @@ export const externalLogin = async (req, res) => {
     return;
   }
 
-  const token =
-    data?.access_token ?? data?.token ?? data?.accessToken ?? data?.content?.access_token ?? null;
+  const upstreamSetCookie = response.headers.get("set-cookie");
+  const token = extractToken(data);
   if (token) {
     res.cookie(COOKIE_NAME, token, {
       httpOnly: true,
@@ -64,6 +86,8 @@ export const externalLogin = async (req, res) => {
       sameSite: "lax",
       path: "/",
     });
+  } else if (upstreamSetCookie) {
+    res.setHeader("set-cookie", upstreamSetCookie);
   }
 
   res.json(data);

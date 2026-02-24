@@ -18,20 +18,31 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
+const getAuthHeader = () => {
+  if (typeof window === "undefined") return null;
+  const token = window.__MRS_ACCESS_TOKEN;
+  if (!token) return null;
+  return token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+};
+
 export const createApiClient = (baseURL) => {
   return {
     get: async (url) => {
+      const authHeader = getAuthHeader();
       const res = await fetch(`${baseURL}${url}`, {
+        headers: authHeader ? { Authorization: authHeader } : undefined,
         credentials: "include",
       });
       return handleResponse(res);
     },
 
     post: async (url, body) => {
+      const authHeader = getAuthHeader();
       const res = await fetch(`${baseURL}${url}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(authHeader ? { Authorization: authHeader } : {}),
         },
         credentials: "include",
         body: JSON.stringify(body),
@@ -40,10 +51,12 @@ export const createApiClient = (baseURL) => {
     },
 
     put: async (url, body) => {
+      const authHeader = getAuthHeader();
       const res = await fetch(`${baseURL}${url}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          ...(authHeader ? { Authorization: authHeader } : {}),
         },
         credentials: "include",
         body: JSON.stringify(body),
@@ -52,8 +65,10 @@ export const createApiClient = (baseURL) => {
     },
 
     delete: async (url) => {
+      const authHeader = getAuthHeader();
       const res = await fetch(`${baseURL}${url}`, {
         method: "DELETE",
+        headers: authHeader ? { Authorization: authHeader } : undefined,
         credentials: "include",
       });
       return handleResponse(res);

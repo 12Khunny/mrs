@@ -18,6 +18,22 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const extractToken = (data) => {
+    return (
+      data?.access_token ??
+      data?.token ??
+      data?.accessToken ??
+      data?.jwt ??
+      data?.id_token ??
+      data?.content?.access_token ??
+      data?.content?.token ??
+      data?.content?.accessToken ??
+      data?.data?.access_token ??
+      data?.data?.token ??
+      null
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -38,7 +54,7 @@ export default function LoginPage() {
       const userObj = data.user || {};
 
       login({
-        token: data.access_token ?? data.token ?? "cookie",
+        token: extractToken(data) ?? "cookie",
         refreshToken: data.refresh_token ?? data.refreshToken ?? null,
         username: data.username ?? userObj.username ?? username ?? "",
         name: data.name ?? userObj.name ?? "",
