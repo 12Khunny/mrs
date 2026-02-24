@@ -1,23 +1,47 @@
 const BASE_URL = process.env.MRS_API_BASE ?? "http://localhost:8900";
+const COOKIE_NAME = process.env.MRS_AUTH_COOKIE ?? "mrs_auth";
+
+function getAuthCandidates(req) {
+  const candidates = [];
+  const headerAuth = req.headers.authorization;
+  const cookieToken = req.cookies?.[COOKIE_NAME];
+
+  if (headerAuth) candidates.push(headerAuth);
+  if (cookieToken) {
+    candidates.push(`Bearer ${cookieToken}`);
+    candidates.push(cookieToken);
+  }
+
+  return [...new Set(candidates.filter(Boolean))];
+}
 
 async function forward(req, res, path, options = {}) {
-  const headers = {};
-  const auth = req.headers.authorization;
-  if (auth) headers.Authorization = auth;
-  if (options.body) headers["Content-Type"] = "application/json";
-
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method: options.method ?? "GET",
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  const text = await response.text();
+  const authCandidates = getAuthCandidates(req);
+  const tryAuth = authCandidates.length > 0 ? authCandidates : [null];
+  let response = null;
   let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text;
+
+  for (const auth of tryAuth) {
+    const headers = {};
+    if (auth) headers.Authorization = auth;
+    if (options.body) headers["Content-Type"] = "application/json";
+
+    response = await fetch(`${BASE_URL}${path}`, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+
+    const text = await response.text();
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
+
+    if (response.ok || (response.status !== 401 && response.status !== 403)) {
+      break;
+    }
   }
 
   if (!response.ok) {

@@ -5,10 +5,25 @@ import cookieParser from "cookie-parser";
 import authRouter from "./src/modules/auth/auth.routes.js";
 import loadedRouter from "./src/modules/loaded/loaded.routes.js";
 import unloadedRouter from "./src/modules/unloaded/unloaded.routes.js";
+import rfidRouter from "./src/modules/rfid/rfid.routes.js";
 
 const app = express();
+const allowedOrigins = (process.env.MRS_WEB_ORIGIN ?? "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const corsOptions = {
-  origin: process.env.MRS_WEB_ORIGIN ?? "http://localhost:5173",
+  origin: (origin, callback) => {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error("Not allowed by CORS"));
+  },
   credentials: true,
 };
 app.use(cors(corsOptions));
@@ -26,6 +41,7 @@ app.use((req, _res, next) => {
 app.use("/api", authRouter);
 app.use("/api", loadedRouter);
 app.use("/api", unloadedRouter);
+app.use("/api", rfidRouter);
 
 const PORT = 5000;
 app.listen(PORT, () => {

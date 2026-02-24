@@ -186,6 +186,14 @@ export default function ManualPage() {
                   )}
                 </div>
               </div>
+              
+              {selectedTruck && (
+                <div className="rounded-md border border-[var(--color-border)] bg-[color:var(--color-muted)]/40 p-3 text-sm">
+                  เลือก: <b>{selectedTruck.truck_license}</b> | เจ้าของ:{" "}
+                  <b>{selectedTruck.owner || "-"}</b> | จำนวนช่อง:{" "}
+                  <b>{selectedTruck.number_channel || 0}</b>
+                </div>
+              )}
 
               <div className="flex items-center gap-2 text-white">
                 <Button
@@ -197,13 +205,6 @@ export default function ManualPage() {
                 </Button>
               </div>
 
-              {selectedTruck && (
-                <div className="rounded-md border border-[var(--color-border)] bg-[color:var(--color-muted)]/40 p-3 text-sm">
-                  เลือก: <b>{selectedTruck.truck_license}</b> | เจ้าของ:{" "}
-                  <b>{selectedTruck.owner || "-"}</b> | จำนวนช่อง:{" "}
-                  <b>{selectedTruck.number_channel || 0}</b>
-                </div>
-              )}
             </div>
           )}
         </CardContent>
@@ -223,6 +224,7 @@ export default function ManualPage() {
               </Button>
               <Button
                 variant="default"
+                className="text-white"
                 onClick={() => {
                   const id = pendingPayload?.latestId;
                   const truck = pendingPayload?.truck;

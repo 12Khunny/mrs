@@ -12,6 +12,7 @@ out/
 logs
 *.log
 pnpm-debug.log*
+.claude
 
 # env
 .env
@@ -23,3 +24,7 @@ Thumbs.db
 
 # Electron build
 release/
+apps/electron/renderer/
+apps/electron/server-dist/
+apps/electron/release-installer/
+apps/electron/*.zip

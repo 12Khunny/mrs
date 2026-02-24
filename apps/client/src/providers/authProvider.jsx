@@ -17,6 +17,9 @@ export default function AuthProvider({ children }) {
     const loadMe = async () => {
       try {
         const me = await api.get("/auth/me");
+        if (typeof window !== "undefined" && me?.access_token) {
+          window.__MRS_ACCESS_TOKEN = me.access_token;
+        }
         setAuthState((prev) => ({
           ...prev,
           token: "cookie",
@@ -38,6 +41,14 @@ export default function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(({ token, refreshToken, username, name, userType, coop }) => {
+    if (typeof window !== "undefined") {
+      if (token && token !== "cookie") {
+        window.__MRS_ACCESS_TOKEN = token;
+      } else {
+        delete window.__MRS_ACCESS_TOKEN;
+      }
+    }
+
     const nextState = {
       token: token ?? null,
       refreshToken: refreshToken ?? null,
@@ -51,6 +62,10 @@ export default function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
+    if (typeof window !== "undefined") {
+      delete window.__MRS_ACCESS_TOKEN;
+    }
+
     setAuthState({
       token: null,
       refreshToken: null,

@@ -6,14 +6,48 @@
   "type": "commonjs",
   "scripts": {
     "dev": "electron .",
-    "start": "electron ."
+    "start": "electron .",
+    "build:assets": "set \"VITE_BASE=./\" && pnpm --filter client build && node scripts/copy-renderer.cjs && node scripts/copy-server.cjs",
+    "build:app": "pnpm run build:assets && electron-packager . MRS --platform=win32 --arch=x64 --out=release --overwrite --no-prune",
+    "build:installer": "pnpm run build:assets && electron-builder --win nsis --publish never"
   },
   "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
     "@mrs/shared-api": "workspace:*",
     "@mrs/shared-types": "workspace:*",
     "@mrs/shared-utils": "workspace:*"
   },
   "devDependencies": {
-    "electron": "^40.6.0"
+    "@electron/get": "^4.0.2",
+    "electron": "^40.6.0",
+    "electron-builder": "^26.8.1",
+    "electron-packager": "^17.1.2"
+  },
+  "build": {
+    "appId": "com.zyntelligent.mrs",
+    "productName": "MRS",
+    "directories": {
+      "output": "release-installer"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "renderer/**/*",
+      "server-dist/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
