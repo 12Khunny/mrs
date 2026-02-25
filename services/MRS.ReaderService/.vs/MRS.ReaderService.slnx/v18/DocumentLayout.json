@@ -1,0 +1,139 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|c:\\zyntelligent\\mrs\\services\\mrs.readerservice\\mrs.readerservice\\services\\rfidreaderservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|solutionrelative:mrs.readerservice\\services\\rfidreaderservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|c:\\zyntelligent\\mrs\\services\\mrs.readerservice\\mrs.readerservice\\controllers\\rfidcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|solutionrelative:mrs.readerservice\\controllers\\rfidcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|c:\\zyntelligent\\mrs\\services\\mrs.readerservice\\mrs.readerservice\\controllers\\readerscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|solutionrelative:mrs.readerservice\\controllers\\readerscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|c:\\zyntelligent\\mrs\\services\\mrs.readerservice\\mrs.readerservice\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|solutionrelative:mrs.readerservice\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|c:\\zyntelligent\\mrs\\services\\mrs.readerservice\\mrs.readerservice\\services\\u861native.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|solutionrelative:mrs.readerservice\\services\\u861native.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|c:\\zyntelligent\\mrs\\services\\mrs.readerservice\\mrs.readerservice\\mrs.readerservice.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|solutionrelative:mrs.readerservice\\mrs.readerservice.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|c:\\zyntelligent\\mrs\\services\\mrs.readerservice\\mrs.readerservice\\models\\reader.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{26CAD4F5-C59B-4184-9001-363AA3E4EEA2}|MRS.ReaderService\\MRS.ReaderService.csproj|solutionrelative:mrs.readerservice\\models\\reader.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "RfidController.cs",
+              "DocumentMoniker": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Controllers\\RfidController.cs",
+              "RelativeDocumentMoniker": "MRS.ReaderService\\Controllers\\RfidController.cs",
+              "ToolTip": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Controllers\\RfidController.cs",
+              "RelativeToolTip": "MRS.ReaderService\\Controllers\\RfidController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABkAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-25T09:50:59.125Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "RfidReaderService.cs",
+              "DocumentMoniker": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Services\\RfidReaderService.cs",
+              "RelativeDocumentMoniker": "MRS.ReaderService\\Services\\RfidReaderService.cs",
+              "ToolTip": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Services\\RfidReaderService.cs",
+              "RelativeToolTip": "MRS.ReaderService\\Services\\RfidReaderService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAzAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-25T09:47:56.7Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ReadersController.cs",
+              "DocumentMoniker": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Controllers\\ReadersController.cs",
+              "RelativeDocumentMoniker": "MRS.ReaderService\\Controllers\\ReadersController.cs",
+              "ToolTip": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Controllers\\ReadersController.cs",
+              "RelativeToolTip": "MRS.ReaderService\\Controllers\\ReadersController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-25T08:30:54.624Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Reader.cs",
+              "DocumentMoniker": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Models\\Reader.cs",
+              "RelativeDocumentMoniker": "MRS.ReaderService\\Models\\Reader.cs",
+              "ToolTip": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Models\\Reader.cs",
+              "RelativeToolTip": "MRS.ReaderService\\Models\\Reader.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-25T08:30:08.997Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "MRS.ReaderService",
+              "DocumentMoniker": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\MRS.ReaderService.csproj",
+              "RelativeDocumentMoniker": "MRS.ReaderService\\MRS.ReaderService.csproj",
+              "ToolTip": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\MRS.ReaderService.csproj",
+              "RelativeToolTip": "MRS.ReaderService\\MRS.ReaderService.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-02-25T08:18:51.839Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Program.cs",
+              "RelativeDocumentMoniker": "MRS.ReaderService\\Program.cs",
+              "ToolTip": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Program.cs",
+              "RelativeToolTip": "MRS.ReaderService\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-25T08:15:49.452Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "U861Native.cs",
+              "DocumentMoniker": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Services\\U861Native.cs",
+              "RelativeDocumentMoniker": "MRS.ReaderService\\Services\\U861Native.cs",
+              "ToolTip": "C:\\Zyntelligent\\mrs\\services\\MRS.ReaderService\\MRS.ReaderService\\Services\\U861Native.cs",
+              "RelativeToolTip": "MRS.ReaderService\\Services\\U861Native.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-25T08:05:29.613Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

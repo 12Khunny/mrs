@@ -1,0 +1,70 @@
+[
+  {
+    "ContainingType": "MRS.ReaderService.Controllers.ReadersController",
+    "Method": "GetAll",
+    "RelativePath": "api/Readers",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "MRS.ReaderService.Controllers.ReadersController",
+    "Method": "Create",
+    "RelativePath": "api/Readers",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "reader",
+        "Type": "MRS.ReaderService.Models.Reader",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "MRS.ReaderService.Controllers.ReadersController",
+    "Method": "GetById",
+    "RelativePath": "api/Readers/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "MRS.ReaderService.Controllers.ReadersController",
+    "Method": "Delete",
+    "RelativePath": "api/Readers/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "MRS.ReaderService.Controllers.RfidController",
+    "Method": "Read",
+    "RelativePath": "api/Rfid/read",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  }
+]
