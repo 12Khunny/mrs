@@ -18,6 +18,10 @@ const corsOptions = {
       callback(null, true);
       return;
     }
+    if (origin === "null") {
+      callback(null, true);
+      return;
+    }
     if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
       callback(null, true);
       return;

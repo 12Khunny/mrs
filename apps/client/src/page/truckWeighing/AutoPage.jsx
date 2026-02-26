@@ -16,6 +16,8 @@ export default function AutoPage() {
   const [readerName, setReaderName] = useState("RFID Reader");
   const [latestTag, setLatestTag] = useState(null);
   const [resolving, setResolving] = useState(false);
+  const [pendingOpen, setPendingOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState(null);
 
   const lastProcessedSequenceRef = useRef(0);
   const busyRef = useRef(false);
@@ -56,6 +58,19 @@ export default function AutoPage() {
     if (!isConnected) return;
     let cancelled = false;
 
+    const syncLastSequenceOnEnter = async () => {
+      try {
+        const data = await api.get("/rfid/detection");
+        if (cancelled) return;
+        const seq = Number(data?.latest_event?.sequence ?? data?.sequence ?? 0);
+        if (seq > 0) {
+          lastProcessedSequenceRef.current = seq;
+        }
+      } catch {
+        // Ignore sync errors; polling loop below will retry.
+      }
+    };
+
     const processDetectedTruck = async (truck, tagId) => {
       const listRes = await api.get("/loadedTruck/loadedTruckList");
       const list = Array.isArray(listRes)
@@ -92,9 +107,8 @@ export default function AutoPage() {
       const hasUnloaded = !!detail?.truck_unloaded_weight;
 
       if (hasLoaded && !hasUnloaded) {
-        navigate(`/truckWeighing/Unloaded/${latest.id}`, {
-          state: { truck, sourceTag: tagId },
-        });
+        setPendingPayload({ latestId: latest.id, truck, tagId });
+        setPendingOpen(true);
         return;
       }
 
@@ -139,7 +153,11 @@ export default function AutoPage() {
       }
     };
 
-    pollDetection();
+    syncLastSequenceOnEnter().finally(() => {
+      if (!cancelled) {
+        pollDetection();
+      }
+    });
     const timer = setInterval(pollDetection, 2000);
     return () => {
       cancelled = true;
@@ -199,6 +217,39 @@ export default function AutoPage() {
           </div>
         </CardContent>
       </Card>
+
+      {pendingOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-xl">
+            <h3 className="text-lg font-semibold">พบรายการค้าง</h3>
+            <p className="mt-2 text-sm text-[var(--color-muted-foreground)]">
+              ทะเบียน <b>{pendingPayload?.truck?.truck_license}</b> มีการชั่งเข้าแล้ว ต้องการไปทำรายการชั่งออกต่อหรือไม่
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPendingOpen(false)}>
+                ยกเลิก
+              </Button>
+              <Button
+                variant="default"
+                className="text-white"
+                onClick={() => {
+                  const id = pendingPayload?.latestId;
+                  const truck = pendingPayload?.truck;
+                  const tagId = pendingPayload?.tagId;
+                  setPendingOpen(false);
+                  if (id) {
+                    navigate(`/truckWeighing/Unloaded/${id}`, {
+                      state: { truck, sourceTag: tagId },
+                    });
+                  }
+                }}
+              >
+                ตกลง
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

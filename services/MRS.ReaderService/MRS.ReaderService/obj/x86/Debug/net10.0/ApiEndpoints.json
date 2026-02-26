@@ -1,5 +1,15 @@
 [
   {
+    "ContainingType": "MRS.ReaderService.Controllers.HealthController",
+    "Method": "Get",
+    "RelativePath": "api/health",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "MRS.ReaderService.Controllers.ReadersController",
     "Method": "GetAll",
     "RelativePath": "api/Readers",
@@ -52,6 +62,22 @@
       {
         "Name": "id",
         "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "MRS.ReaderService.Controllers.RfidController",
+    "Method": "Manual",
+    "RelativePath": "api/Rfid/manual",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "MRS.ReaderService.Controllers.RfidController\u002BManualCardRequest",
         "IsRequired": true
       }
     ],

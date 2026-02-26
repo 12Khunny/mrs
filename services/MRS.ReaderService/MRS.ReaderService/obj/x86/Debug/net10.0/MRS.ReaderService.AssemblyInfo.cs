@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MRS.ReaderService")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+60633cf792f5101c97928bb271ba075537b62d94")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+afef4350799648de1390cf8c2d2dd2a161566f0c")]
 [assembly: System.Reflection.AssemblyProductAttribute("MRS.ReaderService")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MRS.ReaderService")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

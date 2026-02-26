@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>RFID Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+</head>
+<body>
+    <h2>RFID Monitor</h2>
+    <div id="card">Last card: -</div>
+    <div id="status"></div>
+
+    <hr />
+    <h3>Manual Test</h3>
+    <input id="manualCardInput" type="text" placeholder="Enter mock card number" />
+    <button id="manualSendBtn" type="button">Send Manual Card</button>
+    <div id="manualStatus"></div>
+
+    <script>
+        const statusEl = document.getElementById("status");
+        const cardEl = document.getElementById("card");
+        const manualStatusEl = document.getElementById("manualStatus");
+        const manualCardInputEl = document.getElementById("manualCardInput");
+        const manualSendBtnEl = document.getElementById("manualSendBtn");
+        const hubUrl = "http://localhost:5261/rfidHub";
+        const manualUrl = "http://localhost:5000/api/rfid/manual";
+
+        async function startConnection() {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl(hubUrl)
+                .withAutomaticReconnect()
+                .build();
+
+            connection.on("CardDetected", function (cardNumber) {
+                cardEl.innerText = "Last card: " + cardNumber;
+            });
+
+            try {
+                statusEl.innerText = "Connecting: " + hubUrl;
+                await connection.start();
+                statusEl.innerText = "Connected: " + hubUrl;
+            } catch (err) {
+                statusEl.innerText = "Failed: " + hubUrl + " (" + err + ")";
+            }
+        }
+
+        async function sendManualCard() {
+            const cardNumber = manualCardInputEl.value.trim();
+            if (!cardNumber) {
+                manualStatusEl.innerText = "Please enter card number";
+                return;
+            }
+
+            manualSendBtnEl.disabled = true;
+            manualStatusEl.innerText = "Sending...";
+
+            try {
+                const response = await fetch(manualUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tag_id: cardNumber })
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    manualStatusEl.innerText = "Failed: " + (payload.message || response.status);
+                    return;
+                }
+
+                manualStatusEl.innerText = "Sent: " + (payload.latest_event?.tag_id || cardNumber);
+                manualCardInputEl.value = "";
+            } catch (err) {
+                manualStatusEl.innerText = "Error: " + err;
+            } finally {
+                manualSendBtnEl.disabled = false;
+            }
+        }
+
+        manualSendBtnEl.addEventListener("click", sendManualCard);
+        manualCardInputEl.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                sendManualCard();
+            }
+        });
+
+        startConnection();
+    </script>
+</body>
+</html>

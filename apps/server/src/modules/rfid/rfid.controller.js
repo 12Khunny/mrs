@@ -1,4 +1,9 @@
+import http from "node:http";
+import https from "node:https";
+
 const BASE_URL = process.env.MRS_API_BASE ?? "http://localhost:8900";
+const READER_SERVICE_BASE = process.env.MRS_RFID_READER_BASE ?? "http://localhost:5261";
+const COOKIE_NAME = process.env.MRS_AUTH_COOKIE ?? "mrs_auth";
 
 const parseBoolean = (value, fallback = false) => {
   if (typeof value === "boolean") return value;
@@ -26,36 +31,107 @@ const state = {
   sequence: 0,
 };
 
-const getAuthHeaders = (req) => {
-  const headers = {};
-  if (req.headers.authorization) {
-    headers.Authorization = req.headers.authorization;
+const requestJson = ({ url, method = "GET", headers = {}, body = null }) =>
+  new Promise((resolve, reject) => {
+    const target = new URL(url);
+    const client = target.protocol === "https:" ? https : http;
+    const payload = body == null ? null : JSON.stringify(body);
+
+    const req = client.request(
+      target,
+      {
+        method,
+        headers: {
+          ...headers,
+          ...(payload
+            ? {
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(payload),
+              }
+            : {}),
+        },
+      },
+      (res) => {
+        let text = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          text += chunk;
+        });
+        res.on("end", () => {
+          let data = null;
+          try {
+            data = text ? JSON.parse(text) : null;
+          } catch {
+            data = text;
+          }
+
+          resolve({
+            ok: (res.statusCode ?? 500) >= 200 && (res.statusCode ?? 500) < 300,
+            status: res.statusCode ?? 500,
+            data,
+          });
+        });
+      }
+    );
+
+    req.on("error", reject);
+    if (payload) {
+      req.write(payload);
+    }
+    req.end();
+  });
+
+const setDetectionState = (tagId) => {
+  state.connected = true;
+  state.sequence += 1;
+  state.latestEvent = {
+    tag_id: tagId,
+    detected_at: new Date().toISOString(),
+    sequence: state.sequence,
+  };
+  state.updatedAt = state.latestEvent.detected_at;
+};
+
+const getAuthCandidates = (req) => {
+  const candidates = [];
+  const headerAuth = req.headers.authorization;
+  const cookieToken = req.cookies?.[COOKIE_NAME];
+
+  if (headerAuth) candidates.push(headerAuth);
+  if (cookieToken) {
+    candidates.push(`Bearer ${cookieToken}`);
+    candidates.push(cookieToken);
   }
-  return headers;
+
+  return [...new Set(candidates.filter(Boolean))];
 };
 
 const fetchTruckList = async (req) => {
-  const response = await fetch(`${BASE_URL}/loadedTruck/loadedTruckDetail`, {
-    method: "GET",
-    headers: getAuthHeaders(req),
-  });
+  const authCandidates = getAuthCandidates(req);
+  const tryAuth = authCandidates.length > 0 ? authCandidates : [null];
 
-  const text = await response.text();
-  let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text;
+  let response = null;
+  for (const auth of tryAuth) {
+    const headers = auth ? { Authorization: auth } : {};
+    response = await requestJson({
+      url: `${BASE_URL}/loadedTruck/loadedTruckDetail`,
+      method: "GET",
+      headers,
+    });
+
+    if (response.ok || (response.status !== 401 && response.status !== 403)) {
+      break;
+    }
   }
 
-  if (!response.ok) {
+  if (!response || !response.ok) {
     const error = new Error("Failed to fetch truck list");
-    error.status = response.status;
-    error.payload = data;
+    error.status = response?.status ?? 500;
+    error.payload = response?.data ?? { message: "RFID resolve failed" };
     throw error;
   }
 
-  return Array.isArray(data?.truck_list) ? data.truck_list : [];
+  return Array.isArray(response.data?.truck_list) ? response.data.truck_list : [];
 };
 
 const findTruckByTag = (tagId, truckList) => {
@@ -135,18 +211,47 @@ export const pushMockDetection = (req, res) => {
     return;
   }
 
-  state.connected = true;
-  state.sequence += 1;
-  state.latestEvent = {
-    tag_id: tagId,
-    detected_at: new Date().toISOString(),
-    sequence: state.sequence,
-  };
-  state.updatedAt = state.latestEvent.detected_at;
+  setDetectionState(tagId);
 
   res.json({
     connected: state.connected,
     latest_event: state.latestEvent,
     sequence: state.sequence,
   });
+};
+
+export const pushManualDetection = async (req, res) => {
+  const tagId = (req.body?.tag_id ?? "").toString().trim();
+  if (!tagId) {
+    res.status(400).json({ message: "tag_id is required" });
+    return;
+  }
+
+  try {
+    const response = await requestJson({
+      url: `${READER_SERVICE_BASE}/api/rfid/manual`,
+      method: "POST",
+      body: { cardNumber: tagId },
+    });
+
+    if (!response.ok) {
+      res.status(response.status).json(
+        response.data && typeof response.data === "object"
+          ? response.data
+          : { message: "Failed to push manual detection to reader service" }
+      );
+      return;
+    }
+
+    setDetectionState(tagId);
+
+    res.json({
+      connected: state.connected,
+      latest_event: state.latestEvent,
+      sequence: state.sequence,
+      reader_service: response.data,
+    });
+  } catch {
+    res.status(502).json({ message: "Cannot reach reader service" });
+  }
 };

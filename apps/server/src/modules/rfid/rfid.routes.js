@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getLatestDetection,
   getRfidStatus,
+  pushManualDetection,
   pushMockDetection,
   resolveTagToTruck,
   setMockConnection,
@@ -14,6 +15,7 @@ router.get("/rfid/detection", getLatestDetection);
 router.get("/rfid/resolve", resolveTagToTruck);
 
 // Mock endpoints for local/dev testing before hardware integration.
+router.post("/rfid/manual", pushManualDetection);
 router.post("/rfid/mock/connection", setMockConnection);
 router.post("/rfid/mock/detection", pushMockDetection);
 
