@@ -4,24 +4,13 @@ import https from "node:https";
 const BASE_URL = process.env.MRS_API_BASE ?? "http://localhost:8900";
 const READER_SERVICE_BASE = process.env.MRS_RFID_READER_BASE ?? "http://localhost:5261";
 const COOKIE_NAME = process.env.MRS_AUTH_COOKIE ?? "mrs_auth";
+const RFID_RESOLVE_PATH = process.env.MRS_RFID_RESOLVE_PATH ?? "/rfid/resolve";
 
 const parseBoolean = (value, fallback = false) => {
   if (typeof value === "boolean") return value;
   if (typeof value !== "string") return fallback;
   return value.toLowerCase() === "true";
 };
-
-const parseTagMap = () => {
-  const raw = process.env.MRS_RFID_TAG_MAP ?? "{}";
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-};
-
-const tagMap = parseTagMap();
 
 const state = {
   connected: parseBoolean(process.env.MRS_RFID_CONNECTED, false),
@@ -81,6 +70,18 @@ const requestJson = ({ url, method = "GET", headers = {}, body = null }) =>
     req.end();
   });
 
+const checkReaderConnection = async () => {
+  try {
+    const response = await requestJson({
+      url: `${READER_SERVICE_BASE}/api/health`,
+      method: "GET",
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
 const setDetectionState = (tagId) => {
   state.connected = true;
   state.sequence += 1;
@@ -106,7 +107,7 @@ const getAuthCandidates = (req) => {
   return [...new Set(candidates.filter(Boolean))];
 };
 
-const fetchTruckList = async (req) => {
+const resolveTruckFromUpstream = async (req, tagId) => {
   const authCandidates = getAuthCandidates(req);
   const tryAuth = authCandidates.length > 0 ? authCandidates : [null];
 
@@ -114,7 +115,7 @@ const fetchTruckList = async (req) => {
   for (const auth of tryAuth) {
     const headers = auth ? { Authorization: auth } : {};
     response = await requestJson({
-      url: `${BASE_URL}/loadedTruck/loadedTruckDetail`,
+      url: `${BASE_URL}${RFID_RESOLVE_PATH}?tag_id=${encodeURIComponent(tagId)}`,
       method: "GET",
       headers,
     });
@@ -124,33 +125,31 @@ const fetchTruckList = async (req) => {
     }
   }
 
-  if (!response || !response.ok) {
-    const error = new Error("Failed to fetch truck list");
-    error.status = response?.status ?? 500;
-    error.payload = response?.data ?? { message: "RFID resolve failed" };
-    throw error;
+  if (response?.ok) {
+    const truck = response.data?.truck ?? response.data?.data?.truck ?? response.data;
+    if (truck && typeof truck === "object") {
+      return truck;
+    }
+    throw Object.assign(new Error("RFID resolve response does not include truck data"), {
+      status: 502,
+      payload: response.data,
+    });
   }
 
-  return Array.isArray(response.data?.truck_list) ? response.data.truck_list : [];
-};
-
-const findTruckByTag = (tagId, truckList) => {
-  const mapped = tagMap[tagId];
-  if (mapped == null) return null;
-
-  if (typeof mapped === "number") {
-    return truckList.find((truck) => Number(truck?.truck_id) === mapped) ?? null;
+  if (response?.status === 404) {
+    return null;
   }
 
-  const mappedText = String(mapped).trim();
-  if (!mappedText) return null;
-
-  return (
-    truckList.find((truck) => String(truck?.truck_license ?? "").trim() === mappedText) ?? null
-  );
+  throw Object.assign(new Error("Failed to resolve RFID tag from upstream"), {
+    status: response?.status ?? 502,
+    payload: response?.data ?? { message: "RFID resolve failed" },
+  });
 };
 
-export const getRfidStatus = (_req, res) => {
+export const getRfidStatus = async (_req, res) => {
+  state.connected = await checkReaderConnection();
+  state.updatedAt = new Date().toISOString();
+
   res.json({
     connected: state.connected,
     reader_name: state.readerName,
@@ -174,9 +173,8 @@ export const resolveTagToTruck = async (req, res) => {
   }
 
   try {
-    const truckList = await fetchTruckList(req);
-    const truck = findTruckByTag(tagId, truckList);
-    if (!truck) {
+    const upstreamTruck = await resolveTruckFromUpstream(req, tagId);
+    if (!upstreamTruck) {
       res.status(404).json({
         message: "No truck mapping for this RFID tag",
         tag_id: tagId,
@@ -186,9 +184,10 @@ export const resolveTagToTruck = async (req, res) => {
 
     res.json({
       tag_id: tagId,
-      truck,
+      truck: upstreamTruck,
       detected_at: state.latestEvent?.detected_at ?? null,
       sequence: state.sequence,
+      source: "upstream",
     });
   } catch (error) {
     res
@@ -252,6 +251,8 @@ export const pushManualDetection = async (req, res) => {
       reader_service: response.data,
     });
   } catch {
+    state.connected = false;
+    state.updatedAt = new Date().toISOString();
     res.status(502).json({ message: "Cannot reach reader service" });
   }
 };

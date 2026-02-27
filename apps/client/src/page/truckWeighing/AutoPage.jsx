@@ -8,6 +8,25 @@ import { useToast } from "@/providers/toastContext";
 const STATUS_CONNECTED = "connected";
 const STATUS_DISCONNECTED = "disconnected";
 
+const normalizePlate = (value) =>
+  String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+
+const toNumberSafe = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const getTransactionId = (row) =>
+  toNumberSafe(row?.id ?? row?.truck_milk_to_factory_id ?? row?.truckMilkToFactoryId ?? 0);
+
+const hasLoadedWeight = (value) =>
+  value !== null && value !== undefined && String(value).trim() !== "" && String(value).trim() !== "0";
+
+const hasUnloadedWeight = hasLoadedWeight;
+
 export default function AutoPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -81,17 +100,29 @@ export default function AutoPage() {
             ? listRes.content
             : [];
 
-      const sameTruck = list.filter(
-        (x) => x?.truck_license === truck?.truck_license
-      );
+      const targetTruckId = Number(truck?.truck_id ?? truck?.truckId ?? 0);
+      const targetLicense = normalizePlate(truck?.truck_license);
+
+      const sameTruck = list.filter((x) => {
+        const rowTruckId = Number(x?.truck_id ?? x?.truckId ?? 0);
+        if (targetTruckId > 0 && rowTruckId > 0) {
+          return rowTruckId === targetTruckId;
+        }
+        const rowLicense = normalizePlate(x?.truck_license);
+        return (
+          rowLicense === targetLicense ||
+          rowLicense.includes(targetLicense) ||
+          targetLicense.includes(rowLicense)
+        );
+      });
 
       if (sameTruck.length === 0) {
-        navigate("/truckWeighing/Loaded", { state: { truck } });
+        navigate("/truckWeighing/Loaded", { state: { truck, flowSource: "auto" } });
         return;
       }
 
       const latest = sameTruck.reduce(
-        (best, cur) => ((cur?.id || 0) > (best?.id || 0) ? cur : best),
+        (best, cur) => (getTransactionId(cur) > getTransactionId(best) ? cur : best),
         sameTruck[0]
       );
 
@@ -103,16 +134,33 @@ export default function AutoPage() {
         detail = null;
       }
 
-      const hasLoaded = !!(latest?.truck_loaded_weight || detail?.truck_loaded_weight);
-      const hasUnloaded = !!detail?.truck_unloaded_weight;
+      const hasLoaded = hasLoadedWeight(
+        latest?.truck_loaded_weight ??
+          latest?.truckLoadedWeight ??
+          latest?.loaded_weight ??
+          detail?.truck_loaded_weight ??
+          detail?.truckLoadedWeight ??
+          detail?.loaded_weight
+      );
+
+      const hasUnloaded = hasUnloadedWeight(
+        detail?.truck_unloaded_weight ??
+          detail?.truckUnloadedWeight ??
+          detail?.unloaded_weight
+      );
 
       if (hasLoaded && !hasUnloaded) {
-        setPendingPayload({ latestId: latest.id, truck, tagId });
+        const latestId = getTransactionId(latest);
+        if (!latestId) {
+          navigate("/truckWeighing/Loaded", { state: { truck, sourceTag: tagId, flowSource: "auto" } });
+          return;
+        }
+        setPendingPayload({ latestId, truck, tagId });
         setPendingOpen(true);
         return;
       }
 
-      navigate("/truckWeighing/Loaded", { state: { truck, sourceTag: tagId } });
+      navigate("/truckWeighing/Loaded", { state: { truck, sourceTag: tagId, flowSource: "auto" } });
     };
 
     const pollDetection = async () => {
@@ -239,7 +287,7 @@ export default function AutoPage() {
                   setPendingOpen(false);
                   if (id) {
                     navigate(`/truckWeighing/Unloaded/${id}`, {
-                      state: { truck, sourceTag: tagId },
+                      state: { truck, sourceTag: tagId, flowSource: "auto" },
                     });
                   }
                 }}

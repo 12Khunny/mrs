@@ -14,9 +14,8 @@ const routes = [
 const pathToTab = [
   { prefix: "/truckWeighing/Auto", tab: 0 },
   { prefix: "/truckWeighing/Manual", tab: 1 },
-  { prefix: "/truckWeighing/Loaded", tab: 1 },
-  { prefix: "/truckWeighing/Unloaded", tab: 1 },
 ];
+const FLOW_SOURCE_KEY = "mrs_weighing_flow_source";
 
 const DEFAULT_DISPLAY_SIZE = "medium";
 const DEFAULT_THEME = "light";
@@ -43,13 +42,35 @@ export default function AppLayout({ children }) {
   const [displaySize, setDisplaySize] = useState(DEFAULT_DISPLAY_SIZE);
   const [theme, setTheme] = useState(DEFAULT_THEME);
 
+  useEffect(() => {
+    const p = location.pathname;
+    if (p.startsWith("/truckWeighing/Auto")) {
+      sessionStorage.setItem(FLOW_SOURCE_KEY, "auto");
+      return;
+    }
+    if (p.startsWith("/truckWeighing/Manual")) {
+      sessionStorage.setItem(FLOW_SOURCE_KEY, "manual");
+      return;
+    }
+
+    const source = location.state?.flowSource;
+    if (source === "auto" || source === "manual") {
+      sessionStorage.setItem(FLOW_SOURCE_KEY, source);
+    }
+  }, [location.pathname, location.state]);
+
   const currentTab = useMemo(() => {
     const p = location.pathname;
+    if (p.startsWith("/truckWeighing/Loaded") || p.startsWith("/truckWeighing/Unloaded")) {
+      const source = location.state?.flowSource ?? sessionStorage.getItem(FLOW_SOURCE_KEY);
+      return source === "auto" ? 0 : 1;
+    }
+
     const best = pathToTab
       .filter((r) => p === r.prefix || p.startsWith(r.prefix + "/") || p.startsWith(r.prefix))
       .sort((a, b) => b.prefix.length - a.prefix.length)[0];
     return best ? best.tab : 0;
-  }, [location.pathname]);
+  }, [location.pathname, location.state]);
 
   const openLogoutDialog = () => {
     setMenuOpen(false);

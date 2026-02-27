@@ -81,6 +81,7 @@ export default function UnloadedPage() {
   const { showToast } = useToast();
 
   const truck = location.state?.truck;
+  const flowSource = location.state?.flowSource === "auto" ? "auto" : "manual";
 
   const [loadingTransaction, setLoadingTransaction] = useState(true);
   const [transaction, setTransaction] = useState(null);
@@ -156,7 +157,7 @@ export default function UnloadedPage() {
 
       await api.post("/unloadedTruck/save", payload);
       showToast("บันทึกชั่งออกสำเร็จ", "success");
-      navigate("/truckWeighing/Manual", { replace: true });
+      navigate(flowSource === "auto" ? "/truckWeighing/Auto" : "/truckWeighing/Manual", { replace: true });
     } catch {
       showToast("บันทึกไม่สำเร็จ กรุณาลองใหม่", "error");
     } finally {

@@ -49,6 +49,7 @@ export default function LoadedPage() {
   const { showToast } = useToast();
 
   const lockedTruck = location.state?.truck ?? null;
+  const flowSource = location.state?.flowSource === "auto" ? "auto" : "manual";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -226,7 +227,7 @@ export default function LoadedPage() {
 
       await api.post("/loadedTruck/save", payload);
       showToast("บันทึกสำเร็จ", "success");
-      navigate("/truckWeighing/Manual", { replace: true });
+      navigate(flowSource === "auto" ? "/truckWeighing/Auto" : "/truckWeighing/Manual", { replace: true });
     } catch {
       showToast("บันทึกไม่สำเร็จ กรุณาลองใหม่", "error");
     } finally {

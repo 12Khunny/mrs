@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MRS.ReaderService")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9a3e822e40a671a8aa8bf7002b3feb07ab8fa870")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+75df6ec1411a9d08e662faf185b30afecb1ea374")]
 [assembly: System.Reflection.AssemblyProductAttribute("MRS.ReaderService")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MRS.ReaderService")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

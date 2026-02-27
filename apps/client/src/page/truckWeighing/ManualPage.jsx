@@ -70,7 +70,7 @@ export default function ManualPage() {
       );
 
       if (sameTruck.length === 0) {
-        navigate("/truckWeighing/Loaded", { state: { truck: selectedTruck } });
+        navigate("/truckWeighing/Loaded", { state: { truck: selectedTruck, flowSource: "manual" } });
         return;
       }
 
@@ -98,7 +98,7 @@ export default function ManualPage() {
         return;
       }
 
-      navigate("/truckWeighing/Loaded", { state: { truck: selectedTruck } });
+      navigate("/truckWeighing/Loaded", { state: { truck: selectedTruck, flowSource: "manual" } });
     } catch {
       showToast("ตรวจสอบรายการล่าสุดไม่สำเร็จ", "error");
     }
@@ -231,7 +231,7 @@ export default function ManualPage() {
                   setPendingOpen(false);
                   if (id) {
                     navigate(`/truckWeighing/Unloaded/${id}`, {
-                      state: { truck },
+                      state: { truck, flowSource: "manual" },
                     });
                   }
                 }}
