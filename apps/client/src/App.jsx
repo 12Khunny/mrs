@@ -1,11 +1,11 @@
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from "react-router-dom";
-import LoginPage from "./page/auth/LoginPage";
+import LoginPage from "./pages/auth/LoginPage";
 import RequireAuth from "./core/auth/RequireAuth";
 import AppLayout from "./core/layout/AppLayout";
-import AutoPage from "./page/truckWeighing/AutoPage";
-import ManualPage from "./page/truckWeighing/ManualPage";
-import LoadedPage from "./page/truckWeighing/LoadedPage";
-import UnloadedPage from "./page/truckWeighing/UnloadedPage";
+import AutoPage from "./pages/truckWeighing/AutoPage";
+import ManualPage from "./pages/truckWeighing/ManualPage";
+import LoadedPage from "./pages/truckWeighing/LoadedPage";
+import UnloadedPage from "./pages/truckWeighing/UnloadedPage";
 
 function App() {
   const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
