@@ -45,7 +45,11 @@ export default function AutoPage() {
 
   const isConnected = rfidStatus === STATUS_CONNECTED;
   const openRfidMonitorPage = () => {
-    const baseMonitorUrl = import.meta.env.VITE_RFID_MONITOR_URL ?? "http://localhost:5261/api/test.html";
+    const defaultMonitorUrl =
+      typeof __MRS_DEFAULT_RFID_MONITOR_URL__ !== "undefined"
+        ? __MRS_DEFAULT_RFID_MONITOR_URL__
+        : "http://localhost:5261/api/rfid-monitor.html";
+    const baseMonitorUrl = import.meta.env.VITE_RFID_MONITOR_URL ?? defaultMonitorUrl;
     const isElectronRuntime =
       typeof window !== "undefined" &&
       typeof window?.mrsRuntimeConfig?.apiUrl === "string" &&

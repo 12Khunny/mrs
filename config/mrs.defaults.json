@@ -1,0 +1,19 @@
+{
+  "ports": {
+    "server": 5000,
+    "clientDev": 5173,
+    "readerService": 5261
+  },
+  "urls": {
+    "apiBase": "http://localhost:5000/api",
+    "rfidMonitor": "http://localhost:5261/api/rfid-monitor.html",
+    "upstreamApiBase": "https://api.zyanwoa.com/__testapi2__"
+  },
+  "cors": {
+    "allowedOrigins": [
+      "http://localhost:5173",
+      "http://localhost:5261"
+    ],
+    "allowNullOrigin": true
+  }
+}

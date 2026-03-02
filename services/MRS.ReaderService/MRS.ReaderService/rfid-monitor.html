@@ -13,23 +13,23 @@
         }
 
         .container {
-            max-width: 900px;
-            margin: 60px auto;
+            max-width: 960px;
+            margin: 48px auto;
             background: #ffffff;
             border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            padding: 40px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            padding: 32px;
         }
 
         h2 {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
         }
 
         .status {
             text-align: center;
             font-weight: 500;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .dot {
@@ -52,17 +52,17 @@
         .card-box {
             background: #f9fafb;
             border-radius: 10px;
-            padding: 30px;
+            padding: 28px;
             text-align: center;
             font-size: 20px;
             font-weight: 600;
-            margin-bottom: 30px;
+            margin-bottom: 18px;
         }
 
         hr {
             border: none;
             border-top: 1px solid #e5e7eb;
-            margin: 30px 0;
+            margin: 24px 0;
         }
 
         .manual-section {
@@ -73,7 +73,7 @@
             padding: 10px 12px;
             border-radius: 6px;
             border: 1px solid #d1d5db;
-            width: 250px;
+            width: 260px;
         }
 
         button {
@@ -92,22 +92,19 @@
         }
 
         .manual-status {
-            margin-top: 15px;
+            margin-top: 12px;
             font-size: 14px;
         }
 
         .fade {
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
     </style>
 </head>
 
 <body>
-
 <div class="container">
     <h2>RFID Monitor</h2>
-
-    <hr />
 
     <div class="status">
         <span id="statusDot" class="dot"></span>
@@ -125,48 +122,47 @@
         <input id="manualCardInput" type="text" placeholder="Enter RFID" />
         <button id="manualSendBtn" type="button">Send</button>
         <div id="manualStatus" class="manual-status"></div>
-        <div id="manualMode" class="manual-status"></div>
     </div>
 </div>
 
 <script>
+    const params = new URLSearchParams(window.location.search);
+    const defaultHubUrl = `${window.location.origin}/rfidHub`;
+    const defaultManualUrl = "http://localhost:5000/api/rfid/manual";
+    const hubUrl = params.get("hubUrl") || defaultHubUrl;
+    const manualUrl = params.get("manualUrl") || defaultManualUrl;
+    const manualAuthToken = params.get("token");
+
     const statusTextEl = document.getElementById("statusText");
     const statusDotEl = document.getElementById("statusDot");
     const cardEl = document.getElementById("card");
     const manualStatusEl = document.getElementById("manualStatus");
-    const manualModeEl = document.getElementById("manualMode");
     const manualCardInputEl = document.getElementById("manualCardInput");
     const manualSendBtnEl = document.getElementById("manualSendBtn");
 
-    const hubUrl = "http://localhost:5261/rfidHub";
-    const manualUrl = "http://localhost:5000/api/rfid/manual";
-    manualModeEl.innerText = "Mode : MRS only (5000)";
+    function getRequestHeaders() {
+        const headers = { "Content-Type": "application/json" };
+        if (manualAuthToken) {
+            headers.Authorization = manualAuthToken.startsWith("Bearer ")
+                ? manualAuthToken
+                : "Bearer " + manualAuthToken;
+        }
+        return headers;
+    }
 
-    async function startConnection() {
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl(hubUrl)
-            .withAutomaticReconnect()
-            .build();
-
-        connection.on("CardDetected", function (cardNumber) {
-            cardEl.style.opacity = 0;
-            setTimeout(() => {
-                cardEl.innerText = "Last card : " + cardNumber;
-                cardEl.style.opacity = 1;
-            }, 150);
+    async function postCardToMrs(cardNumber) {
+        const response = await fetch(manualUrl, {
+            method: "POST",
+            headers: getRequestHeaders(),
+            credentials: "include",
+            body: JSON.stringify({ tag_id: cardNumber })
         });
 
-        try {
-            statusTextEl.innerText = "Connecting...";
-            await connection.start();
-            statusTextEl.innerText = "Connected";
-            statusDotEl.classList.add("connected");
-            statusDotEl.classList.remove("failed");
-        } catch (err) {
-            statusTextEl.innerText = "Failed";
-            statusDotEl.classList.add("failed");
-            statusDotEl.classList.remove("connected");
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.message || response.status);
         }
+        return payload;
     }
 
     async function sendManualCard() {
@@ -180,24 +176,41 @@
         manualStatusEl.innerText = "Sending...";
 
         try {
-            const response = await fetch(manualUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tag_id: cardNumber })
-            });
-
-            const payload = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                manualStatusEl.innerText = "Failed: " + (payload.message || response.status);
-                return;
-            }
-
-            manualStatusEl.innerText = "Sent : " + (payload.latest_event?.tag_id || cardNumber);
+            const payload = await postCardToMrs(cardNumber);
+            const sentTag = payload.latest_event?.tag_id || cardNumber;
+            manualStatusEl.innerText = "Sent: " + sentTag;
             manualCardInputEl.value = "";
         } catch (err) {
-            manualStatusEl.innerText = "Error: " + err;
+            manualStatusEl.innerText = "Failed: " + err.message;
         } finally {
             manualSendBtnEl.disabled = false;
+        }
+    }
+
+    async function startConnection() {
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(hubUrl)
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on("CardDetected", function (cardNumber) {
+            cardEl.style.opacity = 0;
+            setTimeout(() => {
+                cardEl.innerText = "Last card: " + cardNumber;
+                cardEl.style.opacity = 1;
+            }, 120);
+        });
+
+        try {
+            statusTextEl.innerText = "Connecting...";
+            await connection.start();
+            statusTextEl.innerText = "Connected";
+            statusDotEl.classList.add("connected");
+            statusDotEl.classList.remove("failed");
+        } catch {
+            statusTextEl.innerText = "Failed";
+            statusDotEl.classList.add("failed");
+            statusDotEl.classList.remove("connected");
         }
     }
 
@@ -208,6 +221,5 @@
 
     startConnection();
 </script>
-
 </body>
 </html>
