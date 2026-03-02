@@ -44,6 +44,18 @@ export default function AutoPage() {
   const busyRef = useRef(false);
 
   const isConnected = rfidStatus === STATUS_CONNECTED;
+  const openRfidMonitorPage = () => {
+    const baseMonitorUrl = import.meta.env.VITE_RFID_MONITOR_URL ?? "http://localhost:5261/api/test.html";
+    const isElectronRuntime =
+      typeof window !== "undefined" &&
+      typeof window?.mrsRuntimeConfig?.apiUrl === "string" &&
+      window.mrsRuntimeConfig.apiUrl.includes("://localhost:5000/");
+
+    const target = isElectronRuntime ? "electron" : "client";
+    const separator = baseMonitorUrl.includes("?") ? "&" : "?";
+    const monitorUrl = `${baseMonitorUrl}${separator}target=${target}`;
+    window.open(monitorUrl, "_blank", "noopener,noreferrer");
+  };
 
   const statusLabel = useMemo(() => {
     if (isConnected) return "Connected";
@@ -181,16 +193,17 @@ export default function AutoPage() {
           const resolve = await api.get(`/rfid/resolve?tag_id=${encodeURIComponent(event.tag_id)}`);
           const truck = resolve?.truck ?? null;
           if (!truck) {
-            showToast("RFID tag detected, but no linked truck was found.", "warning");
+            showToast("พบแท็ก RFID แต่ไม่พบรถที่ผูกไว้", "warning");
             lastProcessedSequenceRef.current = event.sequence;
             return;
           }
 
-          showToast(`Detected truck ${truck.truck_license}`, "success");
+          showToast(`ตรวจพบรถ ${truck.truck_license}`, "success");
           lastProcessedSequenceRef.current = event.sequence;
           await processDetectedTruck(truck, event.tag_id);
-        } catch {
-          showToast("RFID tag detected, but truck resolution failed.", "warning");
+        } catch (error) {
+          const detail = error?.message ? ` (${error.message})` : "";
+          showToast(`พบแท็ก RFID แต่ไม่สามารถค้นหาข้อมูลรถได้${detail}`, "warning");
           lastProcessedSequenceRef.current = event.sequence;
         }
       } catch {
@@ -218,7 +231,12 @@ export default function AutoPage() {
     <div className="px-6 py-6">
       <Card className="shadow-sm">
         <CardContent className="py-6">
-          <AutoStatusHeader title="บันทึกการชั่งน้ำหนัก" isConnected={isConnected} statusLabel={statusLabel} />
+          <AutoStatusHeader
+            title="บันทึกการชั่งน้ำหนัก"
+            isConnected={isConnected}
+            statusLabel={statusLabel}
+            onStatusClick={openRfidMonitorPage}
+          />
           <AutoStatusBody
             isConnected={isConnected}
             readerName={readerName}
@@ -232,7 +250,7 @@ export default function AutoPage() {
       <PendingTransactionDialog
         open={pendingOpen}
         truckLicense={pendingPayload?.truck?.truck_license}
-        description="Do you want to continue with unloaded weighing for this transaction?"
+        description="ต้องการไปบันทึกชั่งรถเปล่าของรายการเดิมหรือไม่"
         onCancel={() => setPendingOpen(false)}
         onConfirm={() => {
           const id = pendingPayload?.latestId;

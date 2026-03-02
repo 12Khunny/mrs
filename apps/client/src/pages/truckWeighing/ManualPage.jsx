@@ -201,6 +201,7 @@ export default function ManualPage() {
                   variant="default"
                   onClick={onConfirm}
                   disabled={!selectedTruck}
+                  className="text-white transition-[filter] duration-200 hover:brightness-90 focus:brightness-90"
                 >
                   ตกลง
                 </Button>
@@ -213,7 +214,7 @@ export default function ManualPage() {
       <PendingTransactionDialog
         open={pendingOpen}
         truckLicense={pendingPayload?.truck?.truck_license}
-        description="Do you want to continue with unloaded weighing for this transaction?"
+        description="ต้องการไปบันทึกชั่งรถเปล่าของรายการเดิมหรือไม่"
         onCancel={() => setPendingOpen(false)}
         onConfirm={() => {
           const id = pendingPayload?.latestId;

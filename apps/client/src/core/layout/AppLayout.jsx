@@ -85,6 +85,22 @@ export default function AppLayout({ children }) {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+  useEffect(() => {
+    const runtimeConfig = window?.mrsRuntimeConfig ?? {};
+    const validation = runtimeConfig?.configValidation ?? {};
+    const errors = Array.isArray(validation.errors) ? validation.errors : [];
+    const warnings = Array.isArray(validation.warnings) ? validation.warnings : [];
+
+    if (errors.length > 0) {
+      showToast(`พบปัญหา config: ${errors[0]}`, "error");
+      return;
+    }
+
+    if (warnings.length > 0) {
+      showToast(`คำเตือน config: ${warnings[0]}`, "warning");
+    }
+  }, [showToast]);
+
   const handleConfirmLogout = () => {
     setConfirmOpen(false);
     logout();

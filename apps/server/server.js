@@ -8,7 +8,9 @@ import unloadedRouter from "./src/modules/unloaded/unloaded.routes.js";
 import rfidRouter from "./src/modules/rfid/rfid.routes.js";
 
 const app = express();
-const allowedOrigins = (process.env.MRS_WEB_ORIGIN ?? "http://localhost:5173")
+const allowedOrigins = (
+  process.env.MRS_WEB_ORIGIN ?? "http://localhost:5173,http://localhost:5261"
+)
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -31,6 +33,7 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
 

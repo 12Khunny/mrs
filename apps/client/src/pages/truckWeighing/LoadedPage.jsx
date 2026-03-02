@@ -454,7 +454,12 @@ export default function LoadedPage() {
                   <Button variant="default" onClick={onSubmit} disabled={saving} className="h-12 w-full text-white">
                     {saving ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
                   </Button>
-                  <Button variant="outline" onClick={() => navigate(-1)} disabled={saving} className="h-12 w-full text-red-600 border-red-600 hover:bg-red-600/10 focus:bg-red-600/10">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate(-1)}
+                    disabled={saving}
+                    className="h-12 w-full px-6 text-red-600 border-red-600 hover:bg-red-600/10 focus:bg-red-600/10"
+                  >
                     ยกเลิก
                   </Button>
                 </div>
@@ -473,7 +478,12 @@ export default function LoadedPage() {
               <Button variant="outline" onClick={() => setConfirmOpen(false)} className="px-6 text-red-600 border-red-600 hover:bg-red-600/10 focus:bg-red-600/10">
                 ยกเลิก
               </Button>
-              <Button variant="default" onClick={onConfirmSave} disabled={saving}>
+              <Button
+                variant="default"
+                className="text-white transition-[filter] duration-200 hover:brightness-90 focus:brightness-90"
+                onClick={onConfirmSave}
+                disabled={saving}
+              >
                 {saving ? "กำลังบันทึก..." : "ตกลง"}
               </Button>
             </div>

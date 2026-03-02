@@ -51,7 +51,7 @@ function startLocalServerIfNeeded(config) {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: "1",
-      MRS_WEB_ORIGIN: "null,http://localhost:5173",
+      MRS_WEB_ORIGIN: "null,http://localhost:5173,http://localhost:5261",
       MRS_API_BASE: config.upstreamApiBase || "https://api.zyanwoa.com/__testapi2__",
     },
     stdio: "ignore",

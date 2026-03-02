@@ -30,5 +30,12 @@ app.UseCors("AllowAll");
 
 app.MapControllers();
 app.MapHub<RfidHub>("/rfidHub");
+app.MapGet("/api/test.html", (IWebHostEnvironment env) =>
+{
+    var filePath = Path.Combine(env.ContentRootPath, "test.html");
+    return File.Exists(filePath)
+        ? Results.File(filePath, "text/html")
+        : Results.NotFound("test.html not found");
+});
 
 app.Run();

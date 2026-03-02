@@ -215,7 +215,12 @@ export default function UnloadedPage() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => navigate(-1)} disabled={saving}>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(-1)}
+                  disabled={saving}
+                  className="px-6 text-red-600 border-red-600 hover:bg-red-600/10 focus:bg-red-600/10"
+                >
                   ยกเลิก
                 </Button>
                 <Button variant="default" className="text-white" onClick={onSubmit} disabled={saving}>
@@ -233,10 +238,15 @@ export default function UnloadedPage() {
             <h3 className="text-lg font-semibold">ยืนยันการบันทึก</h3>
             <p className="mt-2 text-sm text-[var(--color-muted-foreground)]">ต้องการบันทึกข้อมูลชั่งรถเปล่าหรือไม่</p>
             <div className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={saving}>
+              <Button variant="outline" onClick={() => setConfirmOpen(false)} className="px-6 text-red-600 border-red-600 hover:bg-red-600/10 focus:bg-red-600/10">
                 ยกเลิก
               </Button>
-              <Button variant="default" className="text-white" onClick={onConfirmSave} disabled={saving}>
+              <Button
+                variant="default"
+                className="text-white transition-[filter] duration-200 hover:brightness-90 focus:brightness-90"
+                onClick={onConfirmSave}
+                disabled={saving}
+              >
                 {saving ? "กำลังบันทึก..." : "ตกลง"}
               </Button>
             </div>

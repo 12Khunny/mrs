@@ -5,6 +5,9 @@
   "packageManager": "pnpm@9.12.0",
   "scripts": {
     "dev": "pnpm -r --parallel dev",
+    "dev:web": "concurrently -k \"corepack pnpm --filter client dev\" \"corepack pnpm --filter server dev\"",
+    "dev:services": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-reader.ps1",
+    "dev:web+services": "concurrently -k \"corepack pnpm run dev:web\" \"corepack pnpm run dev:services\"",
     "dev:all": "concurrently -k \"corepack pnpm -r --parallel dev\" \"powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-reader.ps1\"",
     "dev:client": "pnpm --filter client dev",
     "dev:server": "pnpm --filter server dev",
