@@ -7,19 +7,27 @@ namespace MRS.ReaderService.Controllers
     [Route("api/[controller]")]
     public class ReadersController : ControllerBase
     {
+        private static readonly object syncRoot = new();
         private static List<Reader> readers = new();
         private static int nextId = 1;
 
         [HttpGet]
         public IActionResult GetAll()
         {
-            return Ok(readers);
+            lock (syncRoot)
+            {
+                return Ok(readers.ToList());
+            }
         }
 
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            var reader = readers.FirstOrDefault(r => r.Id == id);
+            Reader? reader;
+            lock (syncRoot)
+            {
+                reader = readers.FirstOrDefault(r => r.Id == id);
+            }
 
             if (reader == null)
                 return NotFound();
@@ -30,8 +38,11 @@ namespace MRS.ReaderService.Controllers
         [HttpPost]
         public IActionResult Create([FromBody] Reader reader)
         {
-            reader.Id = nextId++;
-            readers.Add(reader);
+            lock (syncRoot)
+            {
+                reader.Id = nextId++;
+                readers.Add(reader);
+            }
 
             return CreatedAtAction(nameof(GetById), new { id = reader.Id }, reader);
         }
@@ -39,12 +50,16 @@ namespace MRS.ReaderService.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            var reader = readers.FirstOrDefault(r => r.Id == id);
+            Reader? reader;
+            lock (syncRoot)
+            {
+                reader = readers.FirstOrDefault(r => r.Id == id);
 
-            if (reader == null)
-                return NotFound();
+                if (reader == null)
+                    return NotFound();
 
-            readers.Remove(reader);
+                readers.Remove(reader);
+            }
             return NoContent();
         }
     }

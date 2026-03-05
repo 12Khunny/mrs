@@ -15,7 +15,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", policy =>
     {
         policy
-            .SetIsOriginAllowed(_ => true)
+            .WithOrigins(
+                "http://localhost:5261",   // .NET dev HTTP
+                "https://localhost:7078",  // .NET dev HTTPS
+                "http://localhost:5173",   // Vite / React dev
+                "app://."                  // Electron production
+            )
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();

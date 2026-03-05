@@ -128,7 +128,7 @@
 <script>
     const params = new URLSearchParams(window.location.search);
     const defaultHubUrl = `${window.location.origin}/rfidHub`;
-    const defaultManualUrl = "http://localhost:5000/api/rfid/manual";
+    const defaultManualUrl = `${window.location.origin}/api/rfid/manual`;
     const hubUrl = params.get("hubUrl") || defaultHubUrl;
     const manualUrl = params.get("manualUrl") || defaultManualUrl;
     const manualAuthToken = params.get("token");
@@ -155,7 +155,7 @@
             method: "POST",
             headers: getRequestHeaders(),
             credentials: "include",
-            body: JSON.stringify({ tag_id: cardNumber })
+            body: JSON.stringify({ cardNumber: cardNumber })
         });
 
         const payload = await response.json().catch(() => ({}));
@@ -177,7 +177,7 @@
 
         try {
             const payload = await postCardToMrs(cardNumber);
-            const sentTag = payload.latest_event?.tag_id || cardNumber;
+            const sentTag = payload.cardNumber || cardNumber;
             manualStatusEl.innerText = "Sent: " + sentTag;
             manualCardInputEl.value = "";
         } catch (err) {
