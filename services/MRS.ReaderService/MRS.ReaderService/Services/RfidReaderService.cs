@@ -205,17 +205,25 @@ namespace MRS.ReaderService.Services
 
                 // Return codes 0x01–0x04 = partial/complete scan, 0xFB = no tag
                 if (result == 0xFB || cardCount == 0)
+                {
+                    ClearLastCard();
                     return null;
+                }
 
                 if (result != 0 && result != 1 && result != 2 && result != 3 && result != 4)
                 {
                     _logger.LogWarning("Inventory_G2 returned unexpected code 0x{Code:X2}", result);
+                    ClearLastCard();
                     return null;
                 }
 
                 // Parse EPC buffer: [EPCLen(1B)][PC(2B)][EPC(EPCLen B)] per tag
                 var epc = ParseFirstEpc(_epcBuffer, totalLen, cardCount);
-                if (epc is null) return null;
+                if (epc is null)
+                {
+                    ClearLastCard();
+                    return null;
+                }
 
                 SetLastCard(epc);
                 return epc;
@@ -290,9 +298,15 @@ namespace MRS.ReaderService.Services
             lock (_lock) { _lastCard = card; }
         }
 
+        private void ClearLastCard()
+        {
+            lock (_lock) { _lastCard = string.Empty; }
+        }
+
         public void Dispose()
         {
             Disconnect();
         }
     }
 }
+
