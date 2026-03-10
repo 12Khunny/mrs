@@ -5,6 +5,20 @@ import { useToast } from "@/providers/toastContext";
 import { Button, Card, CardContent, Input, Label } from "@mrs/ui";
 import PendingTransactionDialog from "@/features/truckWeighing/components/PendingTransactionDialog";
 
+const formatDateLocal = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const buildLoadedTruckRangeUrl = (daysBack = 30) => {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - daysBack);
+  return `/loadedTruck/loadedTruckList/${formatDateLocal(start)}/${formatDateLocal(end)}`;
+};
+
 export default function ManualPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -57,7 +71,7 @@ export default function ManualPage() {
     if (!selectedTruck) return;
 
     try {
-      const listRes = await api.get("/loadedTruck/loadedTruckList");
+      const listRes = await api.get(buildLoadedTruckRangeUrl());
       const list = Array.isArray(listRes)
         ? listRes
         : Array.isArray(listRes?.list)

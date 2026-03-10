@@ -1,225 +1,270 @@
-<!DOCTYPE html>
-<html>
-<head>
+<!doctype html>
+<html lang="en">
+  <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>RFID Monitor</title>
+    <link rel="stylesheet" href="/api/shared.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="nav">
+        <div class="nav-title">MRS RFID Console</div>
+        <div class="nav-links">
+          <a class="nav-link active" href="/api/rfid-monitor.html"
+            >RFID Monitor</a
+          >
+          <a class="nav-link" href="/api/reader-settings.html"
+            >Reader Settings</a
+          >
+        </div>
+      </div>
 
-    <style>
-        body {
-            margin: 0;
-            font-family: "Segoe UI", sans-serif;
-            background: #f3f4f6;
-        }
+      <div class="card">
+        <h2 class="page-title">RFID Monitor</h2>
+        <p class="subtitle">Live feed from SignalR and reader runtime status</p>
 
-        .container {
-            max-width: 960px;
-            margin: 48px auto;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-            padding: 32px;
-        }
+        <div class="status-row">
+          <div class="badge">
+            <span id="serviceDot" class="dot"></span>
+            <span id="serviceText">Service : connecting...</span>
+          </div>
+          <div class="badge">
+            <span id="readerDot" class="dot"></span>
+            <span id="readerText">Reader : checking...</span>
+          </div>
+        </div>
 
-        h2 {
-            text-align: center;
-            margin-bottom: 24px;
-        }
+        <div id="cardBox" class="card-box">Latest RFID Code</div>
 
-        .status {
-            text-align: center;
-            font-weight: 500;
-            margin-bottom: 16px;
-        }
+        <div class="section">
+          <h3>Manual Test</h3>
+          <div class="grid">
+            <div class="field">
+              <label>RFID Input</label>
+              <input
+                id="manualCardInput"
+                type="text"
+                placeholder="Enter RFID"
+              />
+            </div>
+            <div class="field">
+              <label>Actions</label>
+              <div class="actions" style="margin-top: 0">
+                <button id="manualSendBtn" class="btn-primary" type="button">
+                  Send
+                </button>
+                <button id="openSettingsBtn" class="btn-warn" type="button">
+                  Open Settings
+                </button>
+              </div>
+            </div>
+          </div>
+          <div id="manualStatus" class="status-panel">Manual test : ready.</div>
+        </div>
 
-        .dot {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            margin-right: 8px;
-            background: gray;
-        }
-
-        .dot.connected {
-            background: #16a34a;
-        }
-
-        .dot.failed {
-            background: #dc2626;
-        }
-
-        .card-box {
-            background: #f9fafb;
-            border-radius: 10px;
-            padding: 28px;
-            text-align: center;
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 18px;
-        }
-
-        hr {
-            border: none;
-            border-top: 1px solid #e5e7eb;
-            margin: 24px 0;
-        }
-
-        .manual-section {
-            text-align: center;
-        }
-
-        input {
-            padding: 10px 12px;
-            border-radius: 6px;
-            border: 1px solid #d1d5db;
-            width: 260px;
-        }
-
-        button {
-            padding: 10px 18px;
-            border-radius: 6px;
-            border: none;
-            background: #0ea5e9;
-            color: white;
-            cursor: pointer;
-            margin-left: 8px;
-        }
-
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .manual-status {
-            margin-top: 12px;
-            font-size: 14px;
-        }
-
-        .fade {
-            transition: all 0.2s ease;
-        }
-    </style>
-</head>
-
-<body>
-<div class="container">
-    <h2>RFID Monitor</h2>
-
-    <div class="status">
-        <span id="statusDot" class="dot"></span>
-        <span id="statusText">Connecting...</span>
+        <div class="section">
+          <h3>Debug Tools</h3>
+          <div id="debugTools" class="debug-panel">Debug : waiting...</div>
+        </div>
+      </div>
     </div>
 
-    <div id="card" class="card-box fade">
-        Latest RFID Code
-    </div>
+    <script src="/api/shared.js"></script>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const defaultHubUrl = `${window.location.origin}/rfidHub`;
+      const defaultManualUrl = `${window.location.origin}/api/rfid/manual`;
+      const hubUrl = params.get("hubUrl") || defaultHubUrl;
+      const manualUrl = params.get("manualUrl") || defaultManualUrl;
+      const manualAuthToken = params.get("token");
 
-    <hr />
+      const el = {
+        serviceDot: document.getElementById("serviceDot"),
+        serviceText: document.getElementById("serviceText"),
+        readerDot: document.getElementById("readerDot"),
+        readerText: document.getElementById("readerText"),
+        cardBox: document.getElementById("cardBox"),
+        manualCardInput: document.getElementById("manualCardInput"),
+        manualSendBtn: document.getElementById("manualSendBtn"),
+        openSettingsBtn: document.getElementById("openSettingsBtn"),
+        manualStatus: document.getElementById("manualStatus"),
+        debugTools: document.getElementById("debugTools"),
+      };
 
-    <div class="manual-section">
-        <h3>Manual Test</h3>
-        <input id="manualCardInput" type="text" placeholder="Enter RFID" />
-        <button id="manualSendBtn" type="button">Send</button>
-        <div id="manualStatus" class="manual-status"></div>
-    </div>
-</div>
+      function setServiceStatus(connected, text) {
+        MrsUi.setConnectionBadge(
+          el.serviceDot,
+          el.serviceText,
+          connected,
+          "Service: connected",
+          text || "Service: disconnected",
+        );
+      }
 
-<script>
-    const params = new URLSearchParams(window.location.search);
-    const defaultHubUrl = `${window.location.origin}/rfidHub`;
-    const defaultManualUrl = `${window.location.origin}/api/rfid/manual`;
-    const hubUrl = params.get("hubUrl") || defaultHubUrl;
-    const manualUrl = params.get("manualUrl") || defaultManualUrl;
-    const manualAuthToken = params.get("token");
+      function setReaderStatus(connected, text) {
+        MrsUi.setConnectionBadge(
+          el.readerDot,
+          el.readerText,
+          connected,
+          "Reader: connected",
+          text || "Reader: disconnected",
+        );
+      }
 
-    const statusTextEl = document.getElementById("statusText");
-    const statusDotEl = document.getElementById("statusDot");
-    const cardEl = document.getElementById("card");
-    const manualStatusEl = document.getElementById("manualStatus");
-    const manualCardInputEl = document.getElementById("manualCardInput");
-    const manualSendBtnEl = document.getElementById("manualSendBtn");
-
-    function getRequestHeaders() {
+      function getRequestHeaders() {
         const headers = { "Content-Type": "application/json" };
         if (manualAuthToken) {
-            headers.Authorization = manualAuthToken.startsWith("Bearer ")
-                ? manualAuthToken
-                : "Bearer " + manualAuthToken;
+          headers.Authorization = manualAuthToken.startsWith("Bearer ")
+            ? manualAuthToken
+            : "Bearer " + manualAuthToken;
         }
         return headers;
-    }
+      }
 
-    async function postCardToMrs(cardNumber) {
+      async function postCardToMrs(cardNumber) {
         const response = await fetch(manualUrl, {
-            method: "POST",
-            headers: getRequestHeaders(),
-            credentials: "include",
-            body: JSON.stringify({ cardNumber: cardNumber })
+          method: "POST",
+          headers: getRequestHeaders(),
+          credentials: "include",
+          body: JSON.stringify({ cardNumber }),
         });
-
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-            throw new Error(payload.message || response.status);
+          throw new Error(payload.message || response.status);
         }
         return payload;
-    }
+      }
 
-    async function sendManualCard() {
-        const cardNumber = manualCardInputEl.value.trim();
+      async function sendManualCard() {
+        const cardNumber = el.manualCardInput.value.trim();
         if (!cardNumber) {
-            manualStatusEl.innerText = "Please enter card number";
-            return;
+          MrsUi.setPanelStatus(
+            el.manualStatus,
+            "Please enter card number",
+            "error",
+          );
+          return;
         }
 
-        manualSendBtnEl.disabled = true;
-        manualStatusEl.innerText = "Sending...";
-
+        el.manualSendBtn.disabled = true;
+        MrsUi.setPanelStatus(el.manualStatus, "Sending...");
         try {
-            const payload = await postCardToMrs(cardNumber);
-            const sentTag = payload.cardNumber || cardNumber;
-            manualStatusEl.innerText = "Sent: " + sentTag;
-            manualCardInputEl.value = "";
+          const payload = await postCardToMrs(cardNumber);
+          const sentTag = payload.cardNumber || cardNumber;
+          MrsUi.setPanelStatus(el.manualStatus, "Sent: " + sentTag, "ok");
+          el.manualCardInput.value = "";
         } catch (err) {
-            manualStatusEl.innerText = "Failed: " + err.message;
+          MrsUi.setPanelStatus(
+            el.manualStatus,
+            "Failed: " + err.message,
+            "error",
+          );
         } finally {
-            manualSendBtnEl.disabled = false;
+          el.manualSendBtn.disabled = false;
         }
-    }
+      }
 
-    async function startConnection() {
+      function renderDebug(payload) {
+        MrsUi.setDebug(el.debugTools, {
+          service: el.serviceText.innerText,
+          readerConnected: payload?.isConnected,
+          lastConnectResultCode: payload?.lastConnectResultCode,
+          lastError: payload?.lastError,
+          scanAttemptCount: payload?.scanAttemptCount,
+          scanSuccessCount: payload?.scanSuccessCount,
+          updatedAt: payload?.updatedAt,
+        });
+      }
+
+      async function refreshReaderStatus() {
+        try {
+          const response = await fetch("/api/settings/reader/status", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          });
+          if (!response.ok) {
+            setReaderStatus(false, "Reader: unavailable");
+            renderDebug({ error: "status endpoint unavailable" });
+            return;
+          }
+
+          const payload = await response.json().catch(() => ({}));
+          const connected = payload?.isConnected === true;
+          const resultCode = payload?.lastConnectResultCode;
+          const suffix = Number.isFinite(resultCode)
+            ? ` (code: ${resultCode})`
+            : "";
+          setReaderStatus(
+            connected,
+            connected ? "Reader: connected" : `Reader: disconnected${suffix}`,
+          );
+          renderDebug(payload);
+        } catch (err) {
+          setReaderStatus(false, "Reader: unavailable");
+          MrsUi.setDebug(el.debugTools, "Status error: " + err.message);
+        }
+      }
+
+      async function startConnection() {
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl(hubUrl)
-            .withAutomaticReconnect()
-            .build();
+          .withUrl(hubUrl)
+          .withAutomaticReconnect()
+          .build();
 
-        connection.on("CardDetected", function (cardNumber) {
-            cardEl.style.opacity = 0;
-            setTimeout(() => {
-                cardEl.innerText = "Last card: " + cardNumber;
-                cardEl.style.opacity = 1;
-            }, 120);
+        connection.on("CardDetected", (cardNumber) => {
+          el.cardBox.style.opacity = 0;
+          setTimeout(() => {
+            el.cardBox.innerText = "Last card: " + cardNumber;
+            el.cardBox.style.opacity = 1;
+          }, 120);
         });
 
+        connection.onreconnecting(() =>
+          setServiceStatus(false, "Service: reconnecting..."),
+        );
+        connection.onreconnected(() =>
+          setServiceStatus(true, "Service: connected"),
+        );
+        connection.onclose(() =>
+          setServiceStatus(false, "Service: disconnected"),
+        );
+
         try {
-            statusTextEl.innerText = "Connecting...";
-            await connection.start();
-            statusTextEl.innerText = "Connected";
-            statusDotEl.classList.add("connected");
-            statusDotEl.classList.remove("failed");
+          setServiceStatus(false, "Service: connecting...");
+          await connection.start();
+          setServiceStatus(true, "Service: connected");
         } catch {
-            statusTextEl.innerText = "Failed";
-            statusDotEl.classList.add("failed");
-            statusDotEl.classList.remove("connected");
+          setServiceStatus(false, "Service: failed");
         }
-    }
+      }
 
-    manualSendBtnEl.addEventListener("click", sendManualCard);
-    manualCardInputEl.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") sendManualCard();
-    });
+      el.manualSendBtn.addEventListener("click", sendManualCard);
+      el.manualCardInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          sendManualCard();
+        }
+      });
+      el.openSettingsBtn.addEventListener("click", () => {
+        window.open(
+          "/api/reader-settings.html",
+          "_blank",
+          "noopener,noreferrer",
+        );
+      });
+      el.readerText.addEventListener("click", () => {
+        window.open(
+          "/api/reader-settings.html",
+          "_blank",
+          "noopener,noreferrer",
+        );
+      });
 
-    startConnection();
-</script>
-</body>
+      startConnection();
+      refreshReaderStatus();
+      setInterval(refreshReaderStatus, 3000);
+    </script>
+  </body>
 </html>

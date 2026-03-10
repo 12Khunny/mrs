@@ -32,3 +32,21 @@ apps/electron/renderer/
 apps/electron/server-dist/
 apps/electron/release-installer/
 apps/electron/*.zip
+
+# IDE / local workspace
+.vs/
+**/.vs/
+
+# Local temporary build check outputs
+services/MRS.ReaderService/_buildcheck*/
+services/MRS.ReaderService/_buildcheck_*/
+
+# Local packaged artifacts
+services.zip
+services/MRS.ReaderService/*.zip
+
+# Local vendor/demo SDK folders (not source of service)
+services/SDK Integrate reader/
+
+# Keep reader settings in repo
+!services/MRS.ReaderService/MRS.ReaderService/reader-settings.json

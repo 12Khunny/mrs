@@ -16,15 +16,12 @@
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
     "express": "^5.2.1",
-    "@mrs/shared-api": "workspace:*",
-    "@mrs/shared-types": "workspace:*",
-    "@mrs/shared-utils": "workspace:*"
+    "@mrs/shared-api": "workspace:*"
   },
   "devDependencies": {
-    "@electron/get": "^4.0.2",
     "electron": "^40.6.0",
     "electron-builder": "^26.8.1",
-    "electron-packager": "^17.1.2"
+    "@electron/packager": "^19.0.5"
   },
   "build": {
     "appId": "com.zyntelligent.mrs",

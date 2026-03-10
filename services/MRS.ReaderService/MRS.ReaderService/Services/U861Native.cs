@@ -132,6 +132,13 @@ namespace MRS.ReaderService.Services
             byte powerDbm,
             int portHandle);
 
+        /// <summary>ตั้งค่า inventory scan time (หน่วย 100ms, ตัวอย่าง 10 = 1s)</summary>
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int WriteScanTime(
+            ref byte comAddress,
+            ref byte scanTime,
+            int portHandle);
+
         /// <summary>ควบคุม Buzzer และ LED</summary>
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern int BuzzerAndLEDControl(

@@ -30,7 +30,12 @@ export const createApiClient = (baseURL) => {
     get: async (url) => {
       const authHeader = getAuthHeader();
       const res = await fetch(`${baseURL}${url}`, {
-        headers: authHeader ? { Authorization: authHeader } : undefined,
+        headers: {
+          ...(authHeader ? { Authorization: authHeader } : {}),
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+        cache: "no-store",
         credentials: "include",
       });
       return handleResponse(res);

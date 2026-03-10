@@ -7,6 +7,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<ReaderSettingsStore>();
 builder.Services.AddSingleton<RfidReaderService>();
 builder.Services.AddHostedService<RfidBackgroundService>();
 
@@ -41,6 +42,27 @@ app.MapGet("/api/rfid-monitor.html", (IWebHostEnvironment env) =>
     return File.Exists(filePath)
         ? Results.File(filePath, "text/html")
         : Results.NotFound("rfid-monitor.html not found");
+});
+app.MapGet("/api/reader-settings.html", (IWebHostEnvironment env) =>
+{
+    var filePath = Path.Combine(env.ContentRootPath, "reader-settings.html");
+    return File.Exists(filePath)
+        ? Results.File(filePath, "text/html")
+        : Results.NotFound("reader-settings.html not found");
+});
+app.MapGet("/api/shared.css", (IWebHostEnvironment env) =>
+{
+    var filePath = Path.Combine(env.ContentRootPath, "shared.css");
+    return File.Exists(filePath)
+        ? Results.File(filePath, "text/css")
+        : Results.NotFound("shared.css not found");
+});
+app.MapGet("/api/shared.js", (IWebHostEnvironment env) =>
+{
+    var filePath = Path.Combine(env.ContentRootPath, "shared.js");
+    return File.Exists(filePath)
+        ? Results.File(filePath, "application/javascript")
+        : Results.NotFound("shared.js not found");
 });
 app.MapGet("/api/test.html", () => Results.Redirect("/api/rfid-monitor.html"));
 

@@ -12,6 +12,7 @@ import unloadedRouter from "./src/modules/unloaded/unloaded.routes.js";
 import rfidRouter from "./src/modules/rfid/rfid.routes.js";
 
 const app = express();
+app.set("etag", false);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const parsePort = (value, fallback = 5000) => {
@@ -83,6 +84,13 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json({ limit: process.env.MRS_JSON_LIMIT ?? "1mb" }));
+
+app.use("/api/rfid", (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+});
 
 app.use((req, _res, next) => {
   const cookieName = process.env.MRS_AUTH_COOKIE ?? "mrs_auth";

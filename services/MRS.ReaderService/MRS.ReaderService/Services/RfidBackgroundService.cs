@@ -14,16 +14,21 @@ namespace MRS.ReaderService.Services
             ILogger<RfidBackgroundService> logger,
             RfidReaderService readerService)
         {
-            _hubContext    = hubContext;
-            _logger        = logger;
+            _hubContext = hubContext;
+            _logger = logger;
             _readerService = readerService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("RFID Background Service starting");
-            
-                        if (!_readerService.IsMockMode)
+
+            if (_readerService.IsMockMode)
+            {
+                _logger.LogWarning("RFID is running in Mock mode; real reader scan is disabled.");
+            }
+
+            if (!_readerService.IsMockMode)
             {
                 var connected = _readerService.Connect();
                 if (!connected)
@@ -32,11 +37,13 @@ namespace MRS.ReaderService.Services
                 }
             }
 
+            var pauseUntilUtc = DateTimeOffset.MinValue;
+            var lastDetectedCard = string.Empty;
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    // ── Auto-reconnect ──────────────────────────────────────────
                     if (!_readerService.IsMockMode && !_readerService.IsConnected)
                     {
                         _logger.LogWarning("Reader disconnected, attempting reconnect...");
@@ -45,23 +52,43 @@ namespace MRS.ReaderService.Services
                         continue;
                     }
 
-                    // ── Scan ────────────────────────────────────────────────────
-                    // หมายเหตุ: ReadNextCardAsync ใน mock mode มี delay ในตัวอยู่แล้ว
-                    // จึง delay เพิ่มเฉพาะ native mode เมื่อไม่เจอ card เท่านั้น
+                    if (_readerService.PauseAfterDetectMs > 0 &&
+                        string.Equals(_readerService.PauseScope, "ANYTAG", StringComparison.OrdinalIgnoreCase) &&
+                        pauseUntilUtc > DateTimeOffset.UtcNow)
+                    {
+                        var waitMs = (int)Math.Max(50, (pauseUntilUtc - DateTimeOffset.UtcNow).TotalMilliseconds);
+                        await Task.Delay(waitMs, stoppingToken);
+                        continue;
+                    }
+
                     var cardNumber = await _readerService.ReadNextCardAsync(stoppingToken);
                     if (string.IsNullOrWhiteSpace(cardNumber))
                     {
                         if (!_readerService.IsMockMode)
+                        {
                             await Task.Delay(_readerService.PollIntervalMs, stoppingToken);
+                        }
+                        continue;
+                    }
+
+                    if (_readerService.PauseAfterDetectMs > 0 &&
+                        string.Equals(_readerService.PauseScope, "SAMETAG", StringComparison.OrdinalIgnoreCase) &&
+                        pauseUntilUtc > DateTimeOffset.UtcNow &&
+                        string.Equals(lastDetectedCard, cardNumber, StringComparison.OrdinalIgnoreCase))
+                    {
+                        await Task.Delay(_readerService.PollIntervalMs, stoppingToken);
                         continue;
                     }
 
                     _logger.LogInformation("Card Detected: {CardNumber}", cardNumber);
+                    lastDetectedCard = cardNumber;
 
-                    // ── Beep feedback ───────────────────────────────────────────
+                    if (_readerService.PauseAfterDetectMs > 0)
+                    {
+                        pauseUntilUtc = DateTimeOffset.UtcNow.AddMilliseconds(_readerService.PauseAfterDetectMs);
+                    }
+
                     _readerService.BeepOnSuccess();
-
-                    // ── Broadcast via SignalR ───────────────────────────────────
                     await _hubContext.Clients.All.SendAsync("CardDetected", cardNumber, stoppingToken);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -75,7 +102,6 @@ namespace MRS.ReaderService.Services
                 }
             }
 
-            // ── ปิด connection เมื่อ service หยุด ─────────────────────────────────
             _readerService.Disconnect();
             _logger.LogInformation("RFID Background Service stopped");
         }

@@ -11,8 +11,6 @@
   },
   "dependencies": {
     "@mrs/shared-api": "workspace:*",
-    "@mrs/shared-types": "workspace:*",
-    "@mrs/shared-utils": "workspace:*",
     "@mrs/ui": "workspace:*",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "lucide-react": "^0.511.0",

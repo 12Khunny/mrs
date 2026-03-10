@@ -60,6 +60,12 @@ export function getLoadedTruckList(req, res) {
   return forward(req, res, "/loadedTruck/loadedTruckList");
 }
 
+export function getLoadedTruckListRange(req, res) {
+  const startDate = req.params.startDate;
+  const endDate = req.params.endDate;
+  return forward(req, res, `/loadedTruck/loadedTruckList/${startDate}/${endDate}`);
+}
+
 export function saveLoadedTruck(req, res) {
   return forward(req, res, "/loadedTruck/save", { method: "POST", body: req.body });
 }

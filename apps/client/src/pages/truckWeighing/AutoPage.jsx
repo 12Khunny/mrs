@@ -7,9 +7,6 @@ import PendingTransactionDialog from "@/features/truckWeighing/components/Pendin
 import AutoStatusHeader from "@/features/truckWeighing/components/AutoStatusHeader";
 import AutoStatusBody from "@/features/truckWeighing/components/AutoStatusBody";
 
-const STATUS_CONNECTED = "connected";
-const STATUS_DISCONNECTED = "disconnected";
-
 const normalizePlate = (value) =>
   String(value ?? "")
     .trim()
@@ -29,11 +26,26 @@ const hasLoadedWeight = (value) =>
 
 const hasUnloadedWeight = hasLoadedWeight;
 
+const formatDateLocal = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const buildLoadedTruckRangeUrl = (daysBack = 30) => {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - daysBack);
+  return `/loadedTruck/loadedTruckList/${formatDateLocal(start)}/${formatDateLocal(end)}`;
+};
+
 export default function AutoPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  const [rfidStatus, setRfidStatus] = useState(STATUS_DISCONNECTED);
+  const [serviceConnected, setServiceConnected] = useState(false);
+  const [readerConnected, setReaderConnected] = useState(false);
   const [readerName, setReaderName] = useState("RFID Reader");
   const [latestTag, setLatestTag] = useState(null);
   const [resolving, setResolving] = useState(false);
@@ -43,7 +55,7 @@ export default function AutoPage() {
   const lastProcessedSequenceRef = useRef(0);
   const busyRef = useRef(false);
 
-  const isConnected = rfidStatus === STATUS_CONNECTED;
+  const isConnected = serviceConnected && readerConnected;
   const openRfidMonitorPage = () => {
     const defaultMonitorUrl =
       typeof __MRS_DEFAULT_RFID_MONITOR_URL__ !== "undefined"
@@ -73,11 +85,15 @@ export default function AutoPage() {
       try {
         const status = await api.get("/rfid/status");
         if (cancelled) return;
-        setRfidStatus(status?.connected ? STATUS_CONNECTED : STATUS_DISCONNECTED);
+        const nextServiceConnected = Boolean(status?.service_connected ?? status?.connected);
+        const nextReaderConnected = Boolean(status?.reader_connected ?? status?.connected);
+        setServiceConnected(nextServiceConnected);
+        setReaderConnected(nextReaderConnected);
         setReaderName(status?.reader_name ?? "RFID Reader");
       } catch {
         if (cancelled) return;
-        setRfidStatus(STATUS_DISCONNECTED);
+        setServiceConnected(false);
+        setReaderConnected(false);
       }
     };
 
@@ -107,7 +123,7 @@ export default function AutoPage() {
     };
 
     const processDetectedTruck = async (truck, tagId) => {
-      const listRes = await api.get("/loadedTruck/loadedTruckList");
+      const listRes = await api.get(buildLoadedTruckRangeUrl());
       const list = Array.isArray(listRes)
         ? listRes
         : Array.isArray(listRes?.list)
@@ -125,6 +141,9 @@ export default function AutoPage() {
           return rowTruckId === targetTruckId;
         }
         const rowLicense = normalizePlate(x?.truck_license);
+        if (!targetLicense || !rowLicense) {
+          return false;
+        }
         return (
           rowLicense === targetLicense ||
           rowLicense.includes(targetLicense) ||
@@ -143,9 +162,12 @@ export default function AutoPage() {
       );
 
       let detail = null;
+      const latestId = getTransactionId(latest);
       try {
-        const detailRes = await api.get(`/unloadedTruck/unloadedTruckDetail/${latest.id}`);
-        detail = detailRes?.content ?? detailRes?.detail ?? detailRes;
+        if (latestId) {
+          const detailRes = await api.get(`/unloadedTruck/unloadedTruckDetail/${latestId}`);
+          detail = detailRes?.content ?? detailRes?.detail ?? detailRes;
+        }
       } catch {
         detail = null;
       }
@@ -166,7 +188,6 @@ export default function AutoPage() {
       );
 
       if (hasLoaded && !hasUnloaded) {
-        const latestId = getTransactionId(latest);
         if (!latestId) {
           navigate("/truckWeighing/Loaded", { state: { truck, sourceTag: tagId, flowSource: "auto" } });
           return;
