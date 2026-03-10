@@ -37,5 +37,8 @@ namespace MRS.ReaderService.Models
 
         [Required]
         public string PauseScope { get; set; } = "ANYTAG";
+
+        [Range(0, 60000)]
+        public int AutoCooldownPerTagMs { get; set; } = 5000;
     }
 }

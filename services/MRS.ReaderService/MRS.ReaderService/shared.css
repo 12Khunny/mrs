@@ -146,6 +146,11 @@ body {
     gap: 6px;
 }
 
+.helper {
+    font-size: 13px;
+    color: var(--muted);
+}
+
 label {
     font-size: 13px;
     color: var(--muted);
@@ -187,6 +192,17 @@ button:disabled {
 .btn-primary { background: var(--primary); }
 .btn-success { background: var(--success); }
 .btn-warn { background: var(--warn); color: #1f2937; }
+.btn-small {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 999px;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+}
 
 .status-panel {
     margin-top: 16px;

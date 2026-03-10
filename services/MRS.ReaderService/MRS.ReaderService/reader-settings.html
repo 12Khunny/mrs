@@ -31,7 +31,8 @@
             <h3>Mock Mode</h3>
             <div class="grid">
                 <div class="field">
-                    <label>Is Mock Mode</label>
+                    <label>Is Mock Mode </label>
+                    <div class="helper">โหมดจำลอง ไม่คุยกับเครื่องจริง</div>
                     <select id="isMockMode">
                         <option value="true">true</option>
                         <option value="false">false</option>
@@ -39,6 +40,7 @@
                 </div>
                 <div class="field">
                     <label>Mock Auto Generate</label>
+                    <div class="helper">สุ่มแท็กอัตโนมัติในโหมดจำลอง</div>
                     <select id="mockAutoGenerate">
                         <option value="true">true</option>
                         <option value="false">false</option>
@@ -53,10 +55,12 @@
                 <div class="grid">
                     <div class="field">
                         <label>Reader IP</label>
+                        <div class="helper">IP ของเครื่อง Reader</div>
                         <input id="ipAddress" type="text" placeholder="192.168.1.100" />
                     </div>
                     <div class="field">
                         <label>Network Port</label>
+                        <div class="helper">พอร์ต TCP/IP ของเครื่อง</div>
                         <input id="networkPort" type="number" />
                     </div>
                 </div>
@@ -67,10 +71,12 @@
                 <div class="grid">
                     <div class="field">
                         <label>Power (dBm)</label>
+                        <div class="helper">กำลังส่งสัญญาณ ยิ่งสูงยิ่งอ่านไกล (สูงสุด 30 dBm)</div>
                         <input id="powerDbm" type="number" />
                     </div>
                     <div class="field">
                         <label>Scan Time (x100ms)</label>
+                        <div class="helper">เวลาสแกนต่อรอบของเครื่อง</div>
                         <input id="scanTime100Ms" type="number" />
                     </div>
                 </div>
@@ -81,18 +87,32 @@
                 <div class="grid">
                     <div class="field">
                         <label>Poll Interval (ms)</label>
+                        <div class="helper">ความถี่ที่ระบบยิงอ่านต่อรอบ</div>
                         <input id="pollIntervalMs" type="number" />
                     </div>
                     <div class="field">
                         <label>Pause After Detect (ms)</label>
+                        <div class="helper">พักอ่านหลังตรวจพบแท็ก</div>
                         <input id="pauseAfterDetectMs" type="number" />
                     </div>
                     <div class="field">
                         <label>Pause Scope</label>
+                        <div class="helper">พักอ่านกับแท็กใด</div>
                         <select id="pauseScope">
-                            <option value="ANYTAG">ANY TAG</option>
-                            <option value="SAMETAG">SAME TAG</option>
+                            <option value="ANYTAG">ANY TAG (ทุกแท็ก)</option>
+                            <option value="SAMETAG">SAME TAG (เฉพาะแท็กเดิม)</option>
                         </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Auto Page Behavior</h3>
+                <div class="grid">
+                    <div class="field">
+                        <label>Auto cooldown per tag (ms)</label>
+                        <div class="helper">กันอ่านซ้ำเฉพาะหน้า Auto</div>
+                        <input id="autoCooldownPerTagMs" type="number" />
                     </div>
                 </div>
             </div>
@@ -120,6 +140,7 @@
         pollIntervalMs: document.getElementById("pollIntervalMs"),
         pauseAfterDetectMs: document.getElementById("pauseAfterDetectMs"),
         pauseScope: document.getElementById("pauseScope"),
+        autoCooldownPerTagMs: document.getElementById("autoCooldownPerTagMs"),
         ipAddress: document.getElementById("ipAddress"),
         networkPort: document.getElementById("networkPort"),
         powerDbm: document.getElementById("powerDbm"),
@@ -164,6 +185,7 @@
             pollIntervalMs: Number(el.pollIntervalMs.value),
             pauseAfterDetectMs: Number(el.pauseAfterDetectMs.value),
             pauseScope: String(el.pauseScope.value || "ANYTAG").toUpperCase(),
+            autoCooldownPerTagMs: Number(el.autoCooldownPerTagMs.value),
             connectionType: "TCP",
             ipAddress: String(el.ipAddress.value || "").trim(),
             networkPort: Number(el.networkPort.value),
@@ -180,6 +202,7 @@
         el.pollIntervalMs.value = settings.pollIntervalMs;
         el.pauseAfterDetectMs.value = settings.pauseAfterDetectMs ?? 0;
         el.pauseScope.value = (settings.pauseScope || "ANYTAG").toUpperCase();
+        el.autoCooldownPerTagMs.value = settings.autoCooldownPerTagMs ?? 0;
         el.ipAddress.value = settings.ipAddress || "";
         el.networkPort.value = settings.networkPort;
         el.powerDbm.value = settings.powerDbm;
@@ -221,7 +244,8 @@
             scanSuccessCount: payload.scanSuccessCount,
             settings: {
                 pauseAfterDetectMs: payload?.settings?.pauseAfterDetectMs,
-                pauseScope: payload?.settings?.pauseScope
+                pauseScope: payload?.settings?.pauseScope,
+                autoCooldownPerTagMs: payload?.settings?.autoCooldownPerTagMs
             }
         });
     }

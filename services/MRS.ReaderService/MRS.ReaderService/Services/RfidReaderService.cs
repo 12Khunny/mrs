@@ -15,6 +15,7 @@ namespace MRS.ReaderService.Services
         private int _pollIntervalMs;
         private int _pauseAfterDetectMs;
         private string _pauseScope = "ANYTAG";
+        private int _autoCooldownPerTagMs;
 
         // Connection config
         private string _connectionType = "TCP";   // "TCP" | "COM" | "AUTO"
@@ -72,11 +73,13 @@ namespace MRS.ReaderService.Services
                 _scanTime100Ms,
                 _pauseAfterDetectMs,
                 _pauseScope);
+            _logger.LogInformation("Auto cooldown per tag (ms) = {Cooldown}", _autoCooldownPerTagMs);
         }
 
         public int PollIntervalMs => _pollIntervalMs;
         public int PauseAfterDetectMs => _pauseAfterDetectMs;
         public string PauseScope => _pauseScope;
+        public int AutoCooldownPerTagMs => _autoCooldownPerTagMs;
         public bool IsMockMode    => _isMockMode;
         public bool IsConnected   => _isMockMode || _isConnected;
 
@@ -103,6 +106,21 @@ namespace MRS.ReaderService.Services
             }
         }
 
+        public void ResetScanCounters()
+        {
+            lock (_lock)
+            {
+                _scanAttemptCount = 0;
+                _scanSuccessCount = 0;
+                _lastInventoryResultCode = -1;
+                _lastInventoryCardCount = 0;
+                _lastInventoryTotalLen = 0;
+                _lastInventoryAt = null;
+                _lastCardDetectedAt = null;
+                _updatedAt = DateTimeOffset.UtcNow;
+            }
+        }
+
         public ReaderConnectionSettings GetConnectionSettingsSnapshot()
         {
             return new ReaderConnectionSettings
@@ -112,6 +130,7 @@ namespace MRS.ReaderService.Services
                 PollIntervalMs = _pollIntervalMs,
                 PauseAfterDetectMs = _pauseAfterDetectMs,
                 PauseScope = _pauseScope,
+                AutoCooldownPerTagMs = _autoCooldownPerTagMs,
                 ConnectionType = _connectionType,
                 IpAddress = _ipAddress,
                 NetworkPort = _networkPort,
@@ -653,7 +672,8 @@ namespace MRS.ReaderService.Services
                 PauseAfterDetectMs = Math.Clamp(settings.PauseAfterDetectMs, 0, 60000),
                 PauseScope = string.Equals(settings.PauseScope, "SAMETAG", StringComparison.OrdinalIgnoreCase)
                     ? "SAMETAG"
-                    : "ANYTAG"
+                    : "ANYTAG",
+                AutoCooldownPerTagMs = Math.Clamp(settings.AutoCooldownPerTagMs, 0, 60000)
             };
         }
 
@@ -671,6 +691,7 @@ namespace MRS.ReaderService.Services
             _scanTime100Ms = (byte)settings.ScanTime100Ms;
             _pauseAfterDetectMs = settings.PauseAfterDetectMs;
             _pauseScope = settings.PauseScope;
+            _autoCooldownPerTagMs = settings.AutoCooldownPerTagMs;
         }
 
         private void InitializeReaderParameters()

@@ -47,5 +47,29 @@ namespace MRS.ReaderService.Controllers
             var result = _readerService.ApplyConnectionSettings(settings);
             return Ok(result);
         }
+
+        [HttpPost("reconnect")]
+        public IActionResult Reconnect()
+        {
+            if (_readerService.IsMockMode)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = "Mock mode: no reader connection to restart"
+                });
+            }
+
+            _readerService.ResetScanCounters();
+            _readerService.Disconnect();
+            var connected = _readerService.Connect();
+
+            return Ok(new
+            {
+                success = connected,
+                message = connected ? "Reader connection restarted" : "Reader reconnect failed",
+                status = _readerService.GetRuntimeStatus()
+            });
+        }
     }
 }

@@ -53,6 +53,8 @@ export default function AutoPage() {
   const [pendingPayload, setPendingPayload] = useState(null);
 
   const lastProcessedSequenceRef = useRef(0);
+  const autoCooldownMsRef = useRef(0);
+  const tagCooldownRef = useRef(new Map());
   const busyRef = useRef(false);
 
   const isConnected = serviceConnected && readerConnected;
@@ -90,6 +92,13 @@ export default function AutoPage() {
         setServiceConnected(nextServiceConnected);
         setReaderConnected(nextReaderConnected);
         setReaderName(status?.reader_name ?? "RFID Reader");
+        const cooldownMs = Number(
+          status?.auto_cooldown_per_tag_ms ??
+            status?.autoCooldownPerTagMs ??
+            status?.auto_cooldown_ms ??
+            0
+        );
+        autoCooldownMsRef.current = Number.isFinite(cooldownMs) && cooldownMs >= 0 ? cooldownMs : 0;
       } catch {
         if (cancelled) return;
         setServiceConnected(false);
@@ -123,7 +132,9 @@ export default function AutoPage() {
     };
 
     const processDetectedTruck = async (truck, tagId) => {
+      if (cancelled) return;
       const listRes = await api.get(buildLoadedTruckRangeUrl());
+      if (cancelled) return;
       const list = Array.isArray(listRes)
         ? listRes
         : Array.isArray(listRes?.list)
@@ -152,6 +163,7 @@ export default function AutoPage() {
       });
 
       if (sameTruck.length === 0) {
+        if (cancelled) return;
         navigate("/truckWeighing/Loaded", { state: { truck, flowSource: "auto" } });
         return;
       }
@@ -166,6 +178,7 @@ export default function AutoPage() {
       try {
         if (latestId) {
           const detailRes = await api.get(`/unloadedTruck/unloadedTruckDetail/${latestId}`);
+          if (cancelled) return;
           detail = detailRes?.content ?? detailRes?.detail ?? detailRes;
         }
       } catch {
@@ -189,14 +202,17 @@ export default function AutoPage() {
 
       if (hasLoaded && !hasUnloaded) {
         if (!latestId) {
+          if (cancelled) return;
           navigate("/truckWeighing/Loaded", { state: { truck, sourceTag: tagId, flowSource: "auto" } });
           return;
         }
+        if (cancelled) return;
         setPendingPayload({ latestId, truck, tagId });
         setPendingOpen(true);
         return;
       }
 
+      if (cancelled) return;
       navigate("/truckWeighing/Loaded", { state: { truck, sourceTag: tagId, flowSource: "auto" } });
     };
 
@@ -208,34 +224,51 @@ export default function AutoPage() {
 
         const event = data?.latest_event;
         if (!event?.sequence || !event?.tag_id) return;
-        if (event.sequence <= lastProcessedSequenceRef.current) return;
+        const seq = Number(event.sequence);
+        const tagId = String(event.tag_id);
+        const now = Date.now();
+        const cooldownMs = autoCooldownMsRef.current || 0;
+        const lastAcceptedAt = tagCooldownRef.current.get(tagId) ?? 0;
+        if (seq <= lastProcessedSequenceRef.current) return;
+        const isCooldownExpired = cooldownMs === 0 || now - lastAcceptedAt >= cooldownMs;
+        if (!isCooldownExpired) return;
 
         busyRef.current = true;
-        setResolving(true);
-        setLatestTag(event.tag_id);
+        if (!cancelled) {
+          setResolving(true);
+          setLatestTag(tagId);
+        }
+        tagCooldownRef.current.set(tagId, now);
+        lastProcessedSequenceRef.current = seq;
 
         try {
-          const resolve = await api.get(`/rfid/resolve?tag_id=${encodeURIComponent(event.tag_id)}`);
+          const resolve = await api.get(`/rfid/resolve?tag_id=${encodeURIComponent(tagId)}`);
+          if (cancelled) return;
           const truck = resolve?.truck ?? null;
           if (!truck) {
-            showToast("พบแท็ก RFID แต่ไม่พบรถที่ผูกไว้", "warning");
-            lastProcessedSequenceRef.current = event.sequence;
+            if (!cancelled) {
+              showToast("พบแท็ก RFID แต่ไม่พบรถที่ผูกไว้", "warning");
+            }
             return;
           }
 
-          showToast(`ตรวจพบรถ ${truck.truck_license}`, "success");
-          lastProcessedSequenceRef.current = event.sequence;
-          await processDetectedTruck(truck, event.tag_id);
+          if (!cancelled) {
+            showToast(`ตรวจพบรถ ${truck.truck_license}`, "success");
+          }
+          await processDetectedTruck(truck, tagId);
         } catch (error) {
           const detail = error?.message ? ` (${error.message})` : "";
-          showToast(`พบแท็ก RFID แต่ไม่สามารถค้นหาข้อมูลรถได้${detail}`, "warning");
-          lastProcessedSequenceRef.current = event.sequence;
+          if (!cancelled) {
+            showToast(`พบแท็ก RFID แต่ไม่สามารถค้นหาข้อมูลรถได้${detail}`, "warning");
+          }
         }
       } catch {
         // Ignore polling errors; status polling will show disconnected if needed.
       } finally {
         busyRef.current = false;
-        setResolving(false);
+        if (!cancelled) {
+          setResolving(false);
+        }
       }
     };
 
@@ -292,3 +325,9 @@ export default function AutoPage() {
     </div>
   );
 }
+
+
+
+
+
+

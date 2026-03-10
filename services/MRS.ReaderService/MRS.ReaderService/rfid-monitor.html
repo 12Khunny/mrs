@@ -33,7 +33,11 @@
           <div class="badge">
             <span id="readerDot" class="dot"></span>
             <span id="readerText">Reader : checking...</span>
+            
           </div>
+          <button id="restartReaderBtn" class="btn-warn btn-small" type="button">
+              Restart 
+            </button>
         </div>
 
         <div id="cardBox" class="card-box">Latest RFID Code</div>
@@ -55,9 +59,6 @@
                 <button id="manualSendBtn" class="btn-primary" type="button">
                   Send
                 </button>
-                <button id="openSettingsBtn" class="btn-warn" type="button">
-                  Open Settings
-                </button>
               </div>
             </div>
           </div>
@@ -65,9 +66,15 @@
         </div>
 
         <div class="section">
-          <h3>Debug Tools</h3>
-          <div id="debugTools" class="debug-panel">Debug : waiting...</div>
+          
+          <div class="actions" style="margin-top: 0">
+                <h3>Debug Tools <button id="toggleDebugBtn" class="btn-ghost btn-small" type="button">Show</button>
+          </div></h3>
+          <div id="debugTools" class="debug-panel hidden">Debug : waiting...</div>
         </div>
+        
+        <div id="readerActionStatus" class="status-panel">Reader control : ready.</div>
+
       </div>
     </div>
 
@@ -90,7 +97,10 @@
         manualSendBtn: document.getElementById("manualSendBtn"),
         openSettingsBtn: document.getElementById("openSettingsBtn"),
         manualStatus: document.getElementById("manualStatus"),
+        restartReaderBtn: document.getElementById("restartReaderBtn"),
+        readerActionStatus: document.getElementById("readerActionStatus"),
         debugTools: document.getElementById("debugTools"),
+        toggleDebugBtn: document.getElementById("toggleDebugBtn"),
       };
 
       function setServiceStatus(connected, text) {
@@ -166,7 +176,32 @@
         }
       }
 
+      async function restartReaderConnection() {
+        el.restartReaderBtn.disabled = true;
+        MrsUi.setPanelStatus(el.readerActionStatus, "Restarting reader...");
+        try {
+          const response = await fetch("/api/settings/reader/reconnect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || payload?.success === false) {
+            const message = payload?.message || "Restart failed";
+            MrsUi.setPanelStatus(el.readerActionStatus, message, "error");
+          } else {
+            MrsUi.setPanelStatus(el.readerActionStatus, payload?.message || "Restarted", "ok");
+            await refreshReaderStatus();
+          }
+        } catch (err) {
+          MrsUi.setPanelStatus(el.readerActionStatus, "Restart failed: " + err.message, "error");
+        } finally {
+          el.restartReaderBtn.disabled = false;
+        }
+      }
+
       function renderDebug(payload) {
+        if (el.debugTools.classList.contains("hidden")) return;
         MrsUi.setDebug(el.debugTools, {
           service: el.serviceText.innerText,
           readerConnected: payload?.isConnected,
@@ -247,19 +282,17 @@
           sendManualCard();
         }
       });
-      el.openSettingsBtn.addEventListener("click", () => {
-        window.open(
-          "/api/reader-settings.html",
-          "_blank",
-          "noopener,noreferrer",
-        );
-      });
+      el.restartReaderBtn.addEventListener("click", restartReaderConnection);
       el.readerText.addEventListener("click", () => {
         window.open(
           "/api/reader-settings.html",
           "_blank",
           "noopener,noreferrer",
         );
+      });
+      el.toggleDebugBtn.addEventListener("click", () => {
+        const isHidden = el.debugTools.classList.toggle("hidden");
+        el.toggleDebugBtn.textContent = isHidden ? "Show" : "Hide";
       });
 
       startConnection();

@@ -9,6 +9,7 @@
   "BaudRate": 1,
   "PowerDbm": 20,
   "ScanTime100Ms": 3,
-  "PauseAfterDetectMs": 10000,
-  "PauseScope": "SAMETAG"
+  "PauseAfterDetectMs": 1000,
+  "PauseScope": "ANYTAG",
+  "AutoCooldownPerTagMs": 5000
 }

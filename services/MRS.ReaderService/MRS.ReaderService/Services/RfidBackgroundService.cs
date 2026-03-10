@@ -80,8 +80,11 @@ namespace MRS.ReaderService.Services
                         continue;
                     }
 
-                    _logger.LogInformation("Card Detected: {CardNumber}", cardNumber);
-                    lastDetectedCard = cardNumber;
+                    if (!string.Equals(lastDetectedCard, cardNumber, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogInformation("Card Detected: {CardNumber}", cardNumber);
+                        lastDetectedCard = cardNumber;
+                    }
 
                     if (_readerService.PauseAfterDetectMs > 0)
                     {

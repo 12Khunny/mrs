@@ -209,6 +209,7 @@ export const getRfidStatus = async (_req, res) => {
   const serviceConnected = await checkReaderConnection();
   const runtimeStatus = await getReaderRuntimeStatus();
   const readerConnected = Boolean(runtimeStatus?.isConnected);
+  const autoCooldownPerTagMs = Number(runtimeStatus?.settings?.autoCooldownPerTagMs ?? 0);
   state.connected = serviceConnected && readerConnected;
   state.updatedAt = new Date().toISOString();
 
@@ -219,6 +220,7 @@ export const getRfidStatus = async (_req, res) => {
     reader_name: state.readerName,
     reader_last_error: runtimeStatus?.lastError ?? null,
     reader_result_code: runtimeStatus?.lastConnectResultCode ?? null,
+    auto_cooldown_per_tag_ms: autoCooldownPerTagMs,
     updated_at: state.updatedAt,
   });
 };
