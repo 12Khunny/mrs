@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RFID Monitor</title>
+    <link rel="stylesheet" href="/api/shared.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="nav">
+        <div class="nav-title">MRS RFID Console</div>
+        <div class="nav-links">
+          <a class="nav-link active" href="/api/rfid-monitor.html"
+            >RFID Monitor</a
+          >
+          <a class="nav-link" href="/api/reader-settings.html"
+            >Reader Settings</a
+          >
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="page-title">RFID Monitor</h2>
+        <p class="subtitle">Live feed from SignalR and reader runtime status</p>
+
+        <div class="status-row">
+          <div class="badge">
+            <span id="serviceDot" class="dot"></span>
+            <span id="serviceText">Service : connecting...</span>
+          </div>
+          <div class="badge">
+            <span id="readerDot" class="dot"></span>
+            <span id="readerText">Reader : checking...</span>
+            
+          </div>
+          <button id="restartReaderBtn" class="btn-warn btn-small" type="button">
+              Restart 
+            </button>
+        </div>
+
+        <div id="cardBox" class="card-box">Latest RFID Code</div>
+
+        <div class="section">
+          <h3>Manual Test</h3>
+          <div class="grid">
+            <div class="field">
+              <label>RFID Input</label>
+              <input
+                id="manualCardInput"
+                type="text"
+                placeholder="Enter RFID"
+              />
+            </div>
+            <div class="field">
+              <label>Actions</label>
+              <div class="actions" style="margin-top: 0">
+                <button id="manualSendBtn" class="btn-primary" type="button">
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+          <div id="manualStatus" class="status-panel">Manual test : ready.</div>
+        </div>
+
+        <div class="section">
+          
+          <div class="actions" style="margin-top: 0">
+                <h3>Debug Tools <button id="toggleDebugBtn" class="btn-ghost btn-small" type="button">Show</button>
+          </div></h3>
+          <div id="debugTools" class="debug-panel hidden">Debug : waiting...</div>
+        </div>
+        
+        <div id="readerActionStatus" class="status-panel">Reader control : ready.</div>
+
+      </div>
+    </div>
+
+    <script src="/api/shared.js"></script>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const defaultHubUrl = `${window.location.origin}/rfidHub`;
+      const defaultManualUrl = `${window.location.origin}/api/rfid/manual`;
+      const hubUrl = params.get("hubUrl") || defaultHubUrl;
+      const manualUrl = params.get("manualUrl") || defaultManualUrl;
+      const manualAuthToken = params.get("token");
+
+      const el = {
+        serviceDot: document.getElementById("serviceDot"),
+        serviceText: document.getElementById("serviceText"),
+        readerDot: document.getElementById("readerDot"),
+        readerText: document.getElementById("readerText"),
+        cardBox: document.getElementById("cardBox"),
+        manualCardInput: document.getElementById("manualCardInput"),
+        manualSendBtn: document.getElementById("manualSendBtn"),
+        openSettingsBtn: document.getElementById("openSettingsBtn"),
+        manualStatus: document.getElementById("manualStatus"),
+        restartReaderBtn: document.getElementById("restartReaderBtn"),
+        readerActionStatus: document.getElementById("readerActionStatus"),
+        debugTools: document.getElementById("debugTools"),
+        toggleDebugBtn: document.getElementById("toggleDebugBtn"),
+      };
+
+      function setServiceStatus(connected, text) {
+        MrsUi.setConnectionBadge(
+          el.serviceDot,
+          el.serviceText,
+          connected,
+          "Service: connected",
+          text || "Service: disconnected",
+        );
+      }
+
+      function setReaderStatus(connected, text) {
+        MrsUi.setConnectionBadge(
+          el.readerDot,
+          el.readerText,
+          connected,
+          "Reader: connected",
+          text || "Reader: disconnected",
+        );
+      }
+
+      function getRequestHeaders() {
+        const headers = { "Content-Type": "application/json" };
+        if (manualAuthToken) {
+          headers.Authorization = manualAuthToken.startsWith("Bearer ")
+            ? manualAuthToken
+            : "Bearer " + manualAuthToken;
+        }
+        return headers;
+      }
+
+      async function postCardToMrs(cardNumber) {
+        const response = await fetch(manualUrl, {
+          method: "POST",
+          headers: getRequestHeaders(),
+          credentials: "include",
+          body: JSON.stringify({ cardNumber }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.message || response.status);
+        }
+        return payload;
+      }
+
+      async function sendManualCard() {
+        const cardNumber = el.manualCardInput.value.trim();
+        if (!cardNumber) {
+          MrsUi.setPanelStatus(
+            el.manualStatus,
+            "Please enter card number",
+            "error",
+          );
+          return;
+        }
+
+        el.manualSendBtn.disabled = true;
+        MrsUi.setPanelStatus(el.manualStatus, "Sending...");
+        try {
+          const payload = await postCardToMrs(cardNumber);
+          const sentTag = payload.cardNumber || cardNumber;
+          MrsUi.setPanelStatus(el.manualStatus, "Sent: " + sentTag, "ok");
+          el.manualCardInput.value = "";
+        } catch (err) {
+          MrsUi.setPanelStatus(
+            el.manualStatus,
+            "Failed: " + err.message,
+            "error",
+          );
+        } finally {
+          el.manualSendBtn.disabled = false;
+        }
+      }
+
+      async function restartReaderConnection() {
+        el.restartReaderBtn.disabled = true;
+        MrsUi.setPanelStatus(el.readerActionStatus, "Restarting reader...");
+        try {
+          const response = await fetch("/api/settings/reader/reconnect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || payload?.success === false) {
+            const message = payload?.message || "Restart failed";
+            MrsUi.setPanelStatus(el.readerActionStatus, message, "error");
+          } else {
+            MrsUi.setPanelStatus(el.readerActionStatus, payload?.message || "Restarted", "ok");
+            await refreshReaderStatus();
+          }
+        } catch (err) {
+          MrsUi.setPanelStatus(el.readerActionStatus, "Restart failed: " + err.message, "error");
+        } finally {
+          el.restartReaderBtn.disabled = false;
+        }
+      }
+
+      function renderDebug(payload) {
+        if (el.debugTools.classList.contains("hidden")) return;
+        MrsUi.setDebug(el.debugTools, {
+          service: el.serviceText.innerText,
+          readerConnected: payload?.isConnected,
+          lastConnectResultCode: payload?.lastConnectResultCode,
+          lastError: payload?.lastError,
+          scanAttemptCount: payload?.scanAttemptCount,
+          scanSuccessCount: payload?.scanSuccessCount,
+          updatedAt: payload?.updatedAt,
+        });
+      }
+
+      async function refreshReaderStatus() {
+        try {
+          const response = await fetch("/api/settings/reader/status", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          });
+          if (!response.ok) {
+            setReaderStatus(false, "Reader: unavailable");
+            renderDebug({ error: "status endpoint unavailable" });
+            return;
+          }
+
+          const payload = await response.json().catch(() => ({}));
+          const connected = payload?.isConnected === true;
+          const resultCode = payload?.lastConnectResultCode;
+          const suffix = Number.isFinite(resultCode)
+            ? ` (code: ${resultCode})`
+            : "";
+          setReaderStatus(
+            connected,
+            connected ? "Reader: connected" : `Reader: disconnected${suffix}`,
+          );
+          renderDebug(payload);
+        } catch (err) {
+          setReaderStatus(false, "Reader: unavailable");
+          MrsUi.setDebug(el.debugTools, "Status error: " + err.message);
+        }
+      }
+
+      async function startConnection() {
+        const connection = new signalR.HubConnectionBuilder()
+          .withUrl(hubUrl)
+          .withAutomaticReconnect()
+          .build();
+
+        connection.on("CardDetected", (cardNumber) => {
+          el.cardBox.style.opacity = 0;
+          setTimeout(() => {
+            el.cardBox.innerText = "Last card: " + cardNumber;
+            el.cardBox.style.opacity = 1;
+          }, 120);
+        });
+
+        connection.onreconnecting(() =>
+          setServiceStatus(false, "Service: reconnecting..."),
+        );
+        connection.onreconnected(() =>
+          setServiceStatus(true, "Service: connected"),
+        );
+        connection.onclose(() =>
+          setServiceStatus(false, "Service: disconnected"),
+        );
+
+        try {
+          setServiceStatus(false, "Service: connecting...");
+          await connection.start();
+          setServiceStatus(true, "Service: connected");
+        } catch {
+          setServiceStatus(false, "Service: failed");
+        }
+      }
+
+      el.manualSendBtn.addEventListener("click", sendManualCard);
+      el.manualCardInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          sendManualCard();
+        }
+      });
+      el.restartReaderBtn.addEventListener("click", restartReaderConnection);
+      el.readerText.addEventListener("click", () => {
+        window.open(
+          "/api/reader-settings.html",
+          "_blank",
+          "noopener,noreferrer",
+        );
+      });
+      el.toggleDebugBtn.addEventListener("click", () => {
+        const isHidden = el.debugTools.classList.toggle("hidden");
+        el.toggleDebugBtn.textContent = isHidden ? "Show" : "Hide";
+      });
+
+      startConnection();
+      refreshReaderStatus();
+      setInterval(refreshReaderStatus, 3000);
+    </script>
+  </body>
+</html>

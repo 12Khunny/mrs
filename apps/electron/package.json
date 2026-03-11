@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "electron .",
     "start": "electron .",
-    "build:assets": "set \"VITE_BASE=./\" && pnpm --filter client build && node scripts/copy-renderer.cjs && node scripts/copy-server.cjs",
+    "build:assets": "set \"VITE_BASE=./\" && pnpm --filter client build && node scripts/copy-renderer.cjs && node scripts/copy-server.cjs && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/publish-reader.ps1",
     "build:app": "pnpm run build:assets && electron-packager . MRS --platform=win32 --arch=x64 --out=release --overwrite --no-prune",
     "build:installer": "pnpm run build:assets && electron-builder --win nsis --publish never"
   },
@@ -36,6 +36,12 @@
       "renderer/**/*",
       "server-dist/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "reader-service",
+        "to": "reader-service"
+      }
+    ],
     "win": {
       "target": [
         "nsis"
@@ -44,7 +50,10 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "warningsAsErrors": false,
+      "include": "installer/installer.nsh"
     }
   }
 }

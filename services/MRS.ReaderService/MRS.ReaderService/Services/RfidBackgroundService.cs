@@ -39,6 +39,7 @@ namespace MRS.ReaderService.Services
 
             var pauseUntilUtc = DateTimeOffset.MinValue;
             var lastDetectedCard = string.Empty;
+            var lastReadAtUtc = DateTimeOffset.UtcNow;
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -62,8 +63,17 @@ namespace MRS.ReaderService.Services
                     }
 
                     var cardNumber = await _readerService.ReadNextCardAsync(stoppingToken);
+                    lastReadAtUtc = DateTimeOffset.UtcNow;
                     if (string.IsNullOrWhiteSpace(cardNumber))
                     {
+                        if (!_readerService.IsMockMode &&
+                            DateTimeOffset.UtcNow - lastReadAtUtc > TimeSpan.FromSeconds(60))
+                        {
+                            _logger.LogWarning("No reader activity for over 60 seconds. Reconnecting...");
+                            _readerService.Disconnect();
+                            _readerService.Connect();
+                            lastReadAtUtc = DateTimeOffset.UtcNow;
+                        }
                         if (!_readerService.IsMockMode)
                         {
                             await Task.Delay(_readerService.PollIntervalMs, stoppingToken);

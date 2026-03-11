@@ -22,6 +22,9 @@ const state = {
   sequence: 0,
   readerHasTag: false,
   readerTag: null,
+  autoCooldownPerTagMs: 0,
+  lastSeenAt: null,
+  cooldownStartAt: null,
 };
 
 const normalizeTag = (value) => String(value ?? "").trim().toUpperCase();
@@ -211,6 +214,8 @@ export const getRfidStatus = async (_req, res) => {
   const readerConnected = Boolean(runtimeStatus?.isConnected);
   const autoCooldownPerTagMs = Number(runtimeStatus?.settings?.autoCooldownPerTagMs ?? 0);
   state.connected = serviceConnected && readerConnected;
+  state.autoCooldownPerTagMs =
+    Number.isFinite(autoCooldownPerTagMs) && autoCooldownPerTagMs >= 0 ? autoCooldownPerTagMs : 0;
   state.updatedAt = new Date().toISOString();
 
   res.json({
@@ -232,15 +237,38 @@ export const getLatestDetection = async (_req, res) => {
 
   const latestTag = await pullLatestTagFromReader();
   if (!latestTag) {
+    if (state.readerHasTag && state.autoCooldownPerTagMs > 0) {
+      state.cooldownStartAt = Date.now();
+    }
     state.readerHasTag = false;
     state.readerTag = null;
   } else {
+    const now = Date.now();
     const isSameTagStillPresent = state.readerHasTag && state.readerTag === latestTag;
+    const cooldownMs = state.autoCooldownPerTagMs ?? 0;
+    if (cooldownMs > 0 && state.cooldownStartAt) {
+      const elapsed = now - state.cooldownStartAt;
+      if (elapsed < cooldownMs) {
+        // Tag reappeared during cooldown; reset cooldown start to when tag disappears again.
+        state.cooldownStartAt = null;
+        state.readerHasTag = true;
+        state.readerTag = latestTag;
+        state.lastSeenAt = now;
+        return res.json({
+          connected: state.connected,
+          latest_event: state.latestEvent,
+          sequence: state.sequence,
+        });
+      }
+      state.cooldownStartAt = null;
+    }
+
     if (!isSameTagStillPresent) {
       setDetectionState(latestTag);
     }
     state.readerHasTag = true;
     state.readerTag = latestTag;
+    state.lastSeenAt = now;
   }
 
   res.json({

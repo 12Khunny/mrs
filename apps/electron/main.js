@@ -1,10 +1,16 @@
-const { app, BrowserWindow, Menu } = require("electron");
+const { app, BrowserWindow, Menu, globalShortcut } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
+// Ensure app data goes under the MRS name (not "electron") before paths are read.
+app.setName("MRS");
+app.setAppUserModelId("com.zyntelligent.mrs");
+
 let mainWindow;
 let serverProcess = null;
+let readerProcess = null;
+let serverLogStream = null;
 
 function parsePort(value, fallback = 5000) {
   const parsed = Number.parseInt(String(value ?? ""), 10);
@@ -30,9 +36,12 @@ function loadAppDefaults() {
 
 const appDefaults = loadAppDefaults();
 const defaultServerPort = parsePort(appDefaults?.ports?.server, 5000);
+const defaultReaderPort = parsePort(appDefaults?.ports?.readerService, 5261);
 const defaultApiUrl = appDefaults?.urls?.apiBase ?? `http://localhost:${defaultServerPort}/api`;
 const defaultUpstreamApiBase =
   appDefaults?.urls?.upstreamApiBase ?? "https://api.zyanwoa.com/__testapi2__";
+const defaultReaderServiceUrl =
+  appDefaults?.urls?.readerServiceUrl ?? `http://localhost:${defaultReaderPort}`;
 const defaultCorsOrigins = Array.isArray(appDefaults?.cors?.allowedOrigins)
   ? appDefaults.cors.allowedOrigins
   : ["http://localhost:5173", "http://localhost:5261"];
@@ -42,12 +51,26 @@ function getRuntimeConfigPath() {
   return path.join(app.getPath("userData"), "config.json");
 }
 
+function migrateLegacyConfig(targetPath) {
+  try {
+    const legacyPath = path.join(app.getPath("appData"), "electron", "config.json");
+    if (!fs.existsSync(legacyPath) || fs.existsSync(targetPath)) return;
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.copyFileSync(legacyPath, targetPath);
+  } catch {
+    // Ignore migration failures; app will fall back to defaults.
+  }
+}
+
 function loadRuntimeConfig() {
   const configPath = getRuntimeConfigPath();
+  migrateLegacyConfig(configPath);
   const defaultConfig = {
     apiUrl: defaultApiUrl,
     upstreamApiBase: defaultUpstreamApiBase,
     autoStartLocalServer: true,
+    autoStartReaderService: true,
+    readerServiceUrl: defaultReaderServiceUrl,
   };
 
   try {
@@ -91,6 +114,13 @@ function startLocalServerIfNeeded(config) {
   if (!fs.existsSync(serverEntry)) return;
   const serverPort = getPortFromApiUrl(config?.apiUrl, 5000);
 
+  const logsDir = path.join(app.getPath("userData"), "logs");
+  try {
+    fs.mkdirSync(logsDir, { recursive: true });
+  } catch {}
+  const serverLogPath = path.join(logsDir, "server.log");
+  serverLogStream = fs.createWriteStream(serverLogPath, { flags: "a" });
+
   serverProcess = spawn(process.execPath, [serverEntry], {
     env: {
       ...process.env,
@@ -99,12 +129,19 @@ function startLocalServerIfNeeded(config) {
       MRS_PORT: String(serverPort),
       MRS_API_BASE: config.upstreamApiBase || defaultUpstreamApiBase,
     },
-    stdio: "ignore",
+    stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
 
+  serverProcess.stdout?.pipe(serverLogStream);
+  serverProcess.stderr?.pipe(serverLogStream);
+
   serverProcess.on("exit", () => {
     serverProcess = null;
+    try {
+      serverLogStream?.end();
+    } catch {}
+    serverLogStream = null;
   });
 }
 
@@ -114,12 +151,61 @@ function stopLocalServer() {
     serverProcess.kill();
   } catch {}
   serverProcess = null;
+  try {
+    serverLogStream?.end();
+  } catch {}
+  serverLogStream = null;
+}
+
+function getBundledReaderServicePath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "reader-service", "MRS.ReaderService.exe");
+  }
+  return path.resolve(
+    __dirname,
+    "../../services/MRS.ReaderService/MRS.ReaderService/bin/Debug/net10.0/MRS.ReaderService.exe"
+  );
+}
+
+function startReaderServiceIfNeeded(config) {
+  if (!config?.autoStartReaderService || readerProcess) return;
+  if (process.platform !== "win32") return;
+
+  // Prefer Windows Service if installed.
+  const tryStartService = spawn("sc.exe", ["start", "MRS Reader Service"], {
+    windowsHide: true,
+    stdio: "ignore",
+  });
+
+  tryStartService.on("exit", (code) => {
+    if (code === 0) return;
+
+    // Fallback: run bundled reader service directly if service is not installed.
+    const readerExe = getBundledReaderServicePath();
+    if (!fs.existsSync(readerExe)) return;
+    const readerUrl = config?.readerServiceUrl || defaultReaderServiceUrl;
+    readerProcess = spawn(readerExe, ["--urls", readerUrl], {
+      windowsHide: true,
+      stdio: "ignore",
+      detached: true,
+    });
+    readerProcess.unref();
+  });
+}
+
+function stopReaderServiceIfNeeded() {
+  if (!readerProcess) return;
+  try {
+    readerProcess.kill();
+  } catch {}
+  readerProcess = null;
 }
 
 function createWindow() {
   const isDev = !app.isPackaged;
   const { config, configPath } = loadRuntimeConfig();
   startLocalServerIfNeeded(config);
+  startReaderServiceIfNeeded(config);
 
   process.env.MRS_RUNTIME_CONFIG = JSON.stringify({
     ...config,
@@ -152,12 +238,29 @@ function createWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+
+  // Allow opening DevTools in packaged builds.
+  globalShortcut.register("Ctrl+Shift+I", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.toggleDevTools();
+    }
+  });
+  globalShortcut.register("Command+Option+I", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.toggleDevTools();
+    }
+  });
 }
 
 app.whenReady().then(createWindow);
 
 app.on("before-quit", stopLocalServer);
+app.on("before-quit", stopReaderServiceIfNeeded);
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
+});
 app.on("window-all-closed", () => {
   stopLocalServer();
+  stopReaderServiceIfNeeded();
   app.quit();
 });

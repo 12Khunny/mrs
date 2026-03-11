@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reader Settings</title>
+    <link rel="stylesheet" href="/api/shared.css" />
+</head>
+<body>
+<div class="shell">
+    <div class="nav">
+        <div class="nav-title">MRS RFID Console</div>
+        <div class="nav-links">
+            <a class="nav-link" href="/api/rfid-monitor.html">RFID Monitor</a>
+            <a class="nav-link active" href="/api/reader-settings.html">Reader Settings</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="page-title">Reader Settings</h2>
+        <p class="subtitle">Single reader setup (TCP/IP)</p>
+
+        <div class="status-row">
+            <div class="badge">
+                <span id="readerDot" class="dot"></span>
+                <span id="readerText">Reader: checking...</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Mock Mode</h3>
+            <div class="grid">
+                <div class="field">
+                    <label>Is Mock Mode </label>
+                    <div class="helper">โหมดจำลอง ไม่คุยกับเครื่องจริง</div>
+                    <select id="isMockMode">
+                        <option value="true">true</option>
+                        <option value="false">false</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Mock Auto Generate</label>
+                    <div class="helper">สุ่มแท็กอัตโนมัติในโหมดจำลอง</div>
+                    <select id="mockAutoGenerate">
+                        <option value="true">true</option>
+                        <option value="false">false</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="nativeSettings">
+            <div class="section">
+                <h3>Connection Settings</h3>
+                <div class="grid">
+                    <div class="field">
+                        <label>Reader IP</label>
+                        <div class="helper">IP ของเครื่อง Reader</div>
+                        <input id="ipAddress" type="text" placeholder="192.168.1.100" />
+                    </div>
+                    <div class="field">
+                        <label>Network Port</label>
+                        <div class="helper">พอร์ต TCP/IP ของเครื่อง</div>
+                        <input id="networkPort" type="number" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Reader Hardware</h3>
+                <div class="grid">
+                    <div class="field">
+                        <label>Power (dBm)</label>
+                        <div class="helper">กำลังส่งสัญญาณ ยิ่งสูงยิ่งอ่านไกล (สูงสุด 30 dBm)</div>
+                        <input id="powerDbm" type="number" />
+                    </div>
+                    <div class="field">
+                        <label>Scan Time (x100ms)</label>
+                        <div class="helper">เวลาสแกนต่อรอบของเครื่อง</div>
+                        <input id="scanTime100Ms" type="number" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>System Behaviour</h3>
+                <div class="grid">
+                    <div class="field">
+                        <label>Poll Interval (ms)</label>
+                        <div class="helper">ความถี่ที่ระบบยิงอ่านต่อรอบ</div>
+                        <input id="pollIntervalMs" type="number" />
+                    </div>
+                    <div class="field">
+                        <label>Pause After Detect (ms)</label>
+                        <div class="helper">พักอ่านหลังตรวจพบแท็ก</div>
+                        <input id="pauseAfterDetectMs" type="number" />
+                    </div>
+                    <div class="field">
+                        <label>Pause Scope</label>
+                        <div class="helper">พักอ่านกับแท็กใด</div>
+                        <select id="pauseScope">
+                            <option value="ANYTAG">ANY TAG (ทุกแท็ก)</option>
+                            <option value="SAMETAG">SAME TAG (เฉพาะแท็กเดิม)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Auto Page Behavior</h3>
+                <div class="grid">
+                    <div class="field">
+                        <label>Auto cooldown per tag (ms)</label>
+                        <div class="helper">กันอ่านซ้ำเฉพาะหน้า Auto</div>
+                        <input id="autoCooldownPerTagMs" type="number" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="reloadBtn" class="btn-warn" type="button">Reload</button>
+            <div class="spacer"></div>
+            <button id="testBtn" class="btn-primary" type="button">Test Connection</button>
+            <button id="saveApplyBtn" class="btn-success" type="button">Save & Apply</button>
+        </div>
+
+        <div id="status" class="status-panel">Ready.</div>
+        <div id="debugTools" class="debug-panel">Debug: waiting...</div>
+    </div>
+</div>
+
+<script src="/api/shared.js"></script>
+<script>
+    const API_BASE = `${window.location.origin}/api/settings/reader`;
+
+    const el = {
+        isMockMode: document.getElementById("isMockMode"),
+        mockAutoGenerate: document.getElementById("mockAutoGenerate"),
+        pollIntervalMs: document.getElementById("pollIntervalMs"),
+        pauseAfterDetectMs: document.getElementById("pauseAfterDetectMs"),
+        pauseScope: document.getElementById("pauseScope"),
+        autoCooldownPerTagMs: document.getElementById("autoCooldownPerTagMs"),
+        ipAddress: document.getElementById("ipAddress"),
+        networkPort: document.getElementById("networkPort"),
+        powerDbm: document.getElementById("powerDbm"),
+        scanTime100Ms: document.getElementById("scanTime100Ms"),
+        nativeSettings: document.getElementById("nativeSettings"),
+        status: document.getElementById("status"),
+        debugTools: document.getElementById("debugTools"),
+        reloadBtn: document.getElementById("reloadBtn"),
+        testBtn: document.getElementById("testBtn"),
+        saveApplyBtn: document.getElementById("saveApplyBtn"),
+        readerDot: document.getElementById("readerDot"),
+        readerText: document.getElementById("readerText")
+    };
+
+    let lastLoadedSettings = null;
+
+    function toBool(value) {
+        return String(value).toLowerCase() === "true";
+    }
+
+    function setStatus(text, kind) {
+        MrsUi.setPanelStatus(el.status, text, kind);
+    }
+
+    function toggleButtons(disabled) {
+        el.reloadBtn.disabled = disabled;
+        el.testBtn.disabled = disabled || toBool(el.isMockMode.value);
+        el.saveApplyBtn.disabled = disabled;
+    }
+
+    function applyModeVisibility() {
+        const isMock = toBool(el.isMockMode.value);
+        el.nativeSettings.classList.toggle("hidden", isMock);
+        el.testBtn.disabled = isMock;
+    }
+
+    function readForm() {
+        const fallback = lastLoadedSettings || {};
+        return {
+            isMockMode: toBool(el.isMockMode.value),
+            mockAutoGenerate: toBool(el.mockAutoGenerate.value),
+            pollIntervalMs: Number(el.pollIntervalMs.value),
+            pauseAfterDetectMs: Number(el.pauseAfterDetectMs.value),
+            pauseScope: String(el.pauseScope.value || "ANYTAG").toUpperCase(),
+            autoCooldownPerTagMs: Number(el.autoCooldownPerTagMs.value),
+            connectionType: "TCP",
+            ipAddress: String(el.ipAddress.value || "").trim(),
+            networkPort: Number(el.networkPort.value),
+            comPort: Number(fallback.comPort ?? 1),
+            baudRate: Number(fallback.baudRate ?? 4),
+            powerDbm: Number(el.powerDbm.value),
+            scanTime100Ms: Number(el.scanTime100Ms.value)
+        };
+    }
+
+    function bindForm(settings) {
+        el.isMockMode.value = String(settings.isMockMode);
+        el.mockAutoGenerate.value = String(settings.mockAutoGenerate);
+        el.pollIntervalMs.value = settings.pollIntervalMs;
+        el.pauseAfterDetectMs.value = settings.pauseAfterDetectMs ?? 0;
+        el.pauseScope.value = (settings.pauseScope || "ANYTAG").toUpperCase();
+        el.autoCooldownPerTagMs.value = settings.autoCooldownPerTagMs ?? 0;
+        el.ipAddress.value = settings.ipAddress || "";
+        el.networkPort.value = settings.networkPort;
+        el.powerDbm.value = settings.powerDbm;
+        el.scanTime100Ms.value = settings.scanTime100Ms;
+        lastLoadedSettings = settings;
+        applyModeVisibility();
+    }
+
+    async function api(path, method, body) {
+        const response = await fetch(`${API_BASE}${path}`, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: body ? JSON.stringify(body) : undefined
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.message || `HTTP ${response.status}`);
+        }
+        return payload;
+    }
+
+    function renderDebugStatus(payload) {
+        MrsUi.setConnectionBadge(
+            el.readerDot,
+            el.readerText,
+            payload.isConnected === true,
+            "Reader: connected",
+            "Reader: disconnected"
+        );
+
+        MrsUi.setDebug(el.debugTools, {
+            connected: payload.isConnected,
+            isMockMode: payload.isMockMode,
+            lastConnectResultCode: payload.lastConnectResultCode,
+            lastError: payload.lastError,
+            updatedAt: payload.updatedAt,
+            scanAttemptCount: payload.scanAttemptCount,
+            scanSuccessCount: payload.scanSuccessCount,
+            settings: {
+                pauseAfterDetectMs: payload?.settings?.pauseAfterDetectMs,
+                pauseScope: payload?.settings?.pauseScope,
+                autoCooldownPerTagMs: payload?.settings?.autoCooldownPerTagMs
+            }
+        });
+    }
+
+    async function refreshLiveStatus() {
+        try {
+            const payload = await api("/status", "GET");
+            renderDebugStatus(payload);
+        } catch (err) {
+            MrsUi.setConnectionBadge(el.readerDot, el.readerText, false, "Reader: connected", "Reader: unavailable");
+            MrsUi.setDebug(el.debugTools, "Live status failed: " + err.message);
+        }
+    }
+
+    async function loadSettings() {
+        toggleButtons(true);
+        setStatus("Loading settings...");
+        try {
+            const settings = await api("", "GET");
+            bindForm(settings);
+            setStatus("Settings loaded.", "ok");
+            await refreshLiveStatus();
+        } catch (err) {
+            setStatus("Load failed: " + err.message, "error");
+        } finally {
+            toggleButtons(false);
+        }
+    }
+
+    async function testConnection() {
+        if (toBool(el.isMockMode.value)) {
+            setStatus("Test disabled in Mock mode.", "error");
+            return;
+        }
+
+        toggleButtons(true);
+        const form = readForm();
+        setStatus("Testing TCP connection...");
+        try {
+            const payload = await api("/test", "POST", {
+                ipAddress: form.ipAddress,
+                networkPort: form.networkPort
+            });
+            setStatus([
+                `success: ${payload.success}`,
+                `resultCode: ${payload.resultCode}`,
+                `message: ${payload.message}`,
+                `version: ${payload.version || "-"}`
+            ].join("\n"), payload.success ? "ok" : "error");
+        } catch (err) {
+            setStatus("Test failed: " + err.message, "error");
+        } finally {
+            toggleButtons(false);
+        }
+    }
+
+    async function saveAndApply() {
+        toggleButtons(true);
+        const form = readForm();
+        setStatus("Saving settings...");
+        try {
+            const saved = await api("", "PUT", form);
+            setStatus("Saved. Applying settings...");
+            const applied = await api("/apply", "POST", saved);
+            setStatus([
+                `success: ${applied.success}`,
+                `resultCode: ${applied.resultCode}`,
+                `message: ${applied.message}`
+            ].join("\n"), applied.success ? "ok" : "error");
+            await refreshLiveStatus();
+        } catch (err) {
+            setStatus("Save/Apply failed: " + err.message, "error");
+        } finally {
+            toggleButtons(false);
+        }
+    }
+
+    el.reloadBtn.addEventListener("click", loadSettings);
+    el.testBtn.addEventListener("click", testConnection);
+    el.saveApplyBtn.addEventListener("click", saveAndApply);
+    el.isMockMode.addEventListener("change", applyModeVisibility);
+
+    loadSettings();
+    setInterval(refreshLiveStatus, 3000);
+</script>
+</body>
+</html>

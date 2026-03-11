@@ -1,7 +1,21 @@
 using MRS.ReaderService.Hubs;
 using MRS.ReaderService.Services;
+using Microsoft.Extensions.Hosting.WindowsServices;
+using MRS.ReaderService.Logging;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory
+});
+
+Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
+var logDir = Path.Combine(AppContext.BaseDirectory, "logs");
+Directory.CreateDirectory(logDir);
+builder.Logging.AddProvider(new FileLoggerProvider(Path.Combine(logDir, "service.log")));
+
+builder.Host.UseWindowsService();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

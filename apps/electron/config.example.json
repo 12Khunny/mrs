@@ -1,5 +1,7 @@
 {
   "apiUrl": "http://localhost:5000/api",
   "upstreamApiBase": "https://api.zyanwoa.com/__testapi2__",
-  "autoStartLocalServer": true
+  "autoStartLocalServer": true,
+  "autoStartReaderService": true,
+  "readerServiceUrl": "http://localhost:5261"
 }

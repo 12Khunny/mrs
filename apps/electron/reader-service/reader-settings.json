@@ -1,0 +1,15 @@
+{
+  "IsMockMode": false,
+  "MockAutoGenerate": false,
+  "PollIntervalMs": 5000,
+  "ConnectionType": "TCP",
+  "IpAddress": "192.168.1.190",
+  "NetworkPort": 6000,
+  "ComPort": 1,
+  "BaudRate": 1,
+  "PowerDbm": 20,
+  "ScanTime100Ms": 3,
+  "PauseAfterDetectMs": 1000,
+  "PauseScope": "ANYTAG",
+  "AutoCooldownPerTagMs": 5000
+}

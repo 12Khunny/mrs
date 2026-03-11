@@ -16,9 +16,13 @@ const copy = (src, dst) => {
   const stat = fs.statSync(src);
   if (stat.isDirectory()) {
     const name = path.basename(src);
-    if (name === "node_modules" || name === ".git") return;
     fs.mkdirSync(dst, { recursive: true });
     for (const entry of fs.readdirSync(src)) {
+      if (name === "node_modules" && entry.startsWith(".pnpm")) {
+        copy(path.join(src, entry), path.join(dst, entry));
+        continue;
+      }
+      if (entry === ".git") continue;
       copy(path.join(src, entry), path.join(dst, entry));
     }
     return;
@@ -27,4 +31,5 @@ const copy = (src, dst) => {
 };
 
 copy(sourceDir, targetDir);
+copy(path.join(sourceDir, "node_modules"), path.join(targetDir, "node_modules"));
 console.log(`Copied server source: ${sourceDir} -> ${targetDir}`);
