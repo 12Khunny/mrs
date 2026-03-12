@@ -39,7 +39,8 @@ namespace MRS.ReaderService.Services
 
             var pauseUntilUtc = DateTimeOffset.MinValue;
             var lastDetectedCard = string.Empty;
-            var lastReadAtUtc = DateTimeOffset.UtcNow;
+            var lastReconnectAtUtc = DateTimeOffset.UtcNow;
+            var reconnectInterval = TimeSpan.FromSeconds(60);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -49,8 +50,18 @@ namespace MRS.ReaderService.Services
                     {
                         _logger.LogWarning("Reader disconnected, attempting reconnect...");
                         _readerService.Connect();
+                        lastReconnectAtUtc = DateTimeOffset.UtcNow;
                         await Task.Delay(5000, stoppingToken);
                         continue;
+                    }
+
+                    if (!_readerService.IsMockMode &&
+                        DateTimeOffset.UtcNow - lastReconnectAtUtc >= reconnectInterval)
+                    {
+                        _logger.LogWarning("Forcing reconnect (interval {Seconds}s).", (int)reconnectInterval.TotalSeconds);
+                        _readerService.Disconnect();
+                        _readerService.Connect();
+                        lastReconnectAtUtc = DateTimeOffset.UtcNow;
                     }
 
                     if (_readerService.PauseAfterDetectMs > 0 &&
@@ -63,17 +74,8 @@ namespace MRS.ReaderService.Services
                     }
 
                     var cardNumber = await _readerService.ReadNextCardAsync(stoppingToken);
-                    lastReadAtUtc = DateTimeOffset.UtcNow;
                     if (string.IsNullOrWhiteSpace(cardNumber))
                     {
-                        if (!_readerService.IsMockMode &&
-                            DateTimeOffset.UtcNow - lastReadAtUtc > TimeSpan.FromSeconds(60))
-                        {
-                            _logger.LogWarning("No reader activity for over 60 seconds. Reconnecting...");
-                            _readerService.Disconnect();
-                            _readerService.Connect();
-                            lastReadAtUtc = DateTimeOffset.UtcNow;
-                        }
                         if (!_readerService.IsMockMode)
                         {
                             await Task.Delay(_readerService.PollIntervalMs, stoppingToken);
