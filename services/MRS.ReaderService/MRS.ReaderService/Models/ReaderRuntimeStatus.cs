@@ -2,8 +2,6 @@ namespace MRS.ReaderService.Models
 {
     public class ReaderRuntimeStatus
     {
-        public bool IsMockMode { get; set; }
-
         public bool IsConnected { get; set; }
 
         public int LastConnectResultCode { get; set; }

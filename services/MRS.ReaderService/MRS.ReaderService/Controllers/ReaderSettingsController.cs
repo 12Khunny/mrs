@@ -27,13 +27,6 @@ namespace MRS.ReaderService.Controllers
             return Ok(_readerService.GetRuntimeStatus());
         }
 
-        [HttpPost("test")]
-        public IActionResult Test([FromBody] ReaderConnectionTestRequest request)
-        {
-            var result = _readerService.TestTcpConnection(request.IpAddress, request.NetworkPort);
-            return Ok(result);
-        }
-
         [HttpPut]
         public IActionResult Save([FromBody] ReaderConnectionSettings settings)
         {
@@ -51,15 +44,6 @@ namespace MRS.ReaderService.Controllers
         [HttpPost("reconnect")]
         public IActionResult Reconnect()
         {
-            if (_readerService.IsMockMode)
-            {
-                return Ok(new
-                {
-                    success = true,
-                    message = "Mock mode: no reader connection to restart"
-                });
-            }
-
             _readerService.ResetScanCounters();
             _readerService.Disconnect();
             var connected = _readerService.Connect();

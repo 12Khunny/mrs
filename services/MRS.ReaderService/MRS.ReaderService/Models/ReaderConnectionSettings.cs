@@ -4,10 +4,6 @@ namespace MRS.ReaderService.Models
 {
     public class ReaderConnectionSettings
     {
-        public bool IsMockMode { get; set; } = true;
-
-        public bool MockAutoGenerate { get; set; } = true;
-
         [Range(200, 60000)]
         public int PollIntervalMs { get; set; } = 3000;
 

@@ -10,8 +10,6 @@ namespace MRS.ReaderService.Services
         private readonly ReaderSettingsStore _settingsStore;
 
         // â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        private bool _isMockMode;
-        private bool _mockAutoGenerate;
         private int _pollIntervalMs;
         private int _pauseAfterDetectMs;
         private string _pauseScope = "ANYTAG";
@@ -58,10 +56,8 @@ namespace MRS.ReaderService.Services
             ApplySettingsInMemory(NormalizeSettings(loadedSettings));
 
             _logger.LogInformation(
-                "RFID service initialized. Mode={Mode}, ConnectionType={ConnType}, MockAutoGenerate={AutoGen}, PollIntervalMs={Poll}",
-                _isMockMode ? "Mock" : "Native",
+                "RFID service initialized. ConnectionType={ConnType}, PollIntervalMs={Poll}",
                 _connectionType,
-                _mockAutoGenerate,
                 _pollIntervalMs);
             _logger.LogInformation(
                 "Effective reader settings: IP={Ip}, Port={Port}, ComPort={ComPort}, Baud={Baud}, Power={Power}, ScanTime100Ms={Scan}, PauseAfterDetectMs={PauseMs}, PauseScope={PauseScope}",
@@ -80,8 +76,7 @@ namespace MRS.ReaderService.Services
         public int PauseAfterDetectMs => _pauseAfterDetectMs;
         public string PauseScope => _pauseScope;
         public int AutoCooldownPerTagMs => _autoCooldownPerTagMs;
-        public bool IsMockMode    => _isMockMode;
-        public bool IsConnected   => _isMockMode || _isConnected;
+        public bool IsConnected   => _isConnected;
 
         public ReaderRuntimeStatus GetRuntimeStatus()
         {
@@ -89,8 +84,7 @@ namespace MRS.ReaderService.Services
             {
                 return new ReaderRuntimeStatus
                 {
-                    IsMockMode = _isMockMode,
-                    IsConnected = _isMockMode || _isConnected,
+                    IsConnected = _isConnected,
                     LastConnectResultCode = _lastConnectResultCode,
                     LastError = _lastError,
                     UpdatedAt = _updatedAt,
@@ -125,8 +119,6 @@ namespace MRS.ReaderService.Services
         {
             return new ReaderConnectionSettings
             {
-                IsMockMode = _isMockMode,
-                MockAutoGenerate = _mockAutoGenerate,
                 PollIntervalMs = _pollIntervalMs,
                 PauseAfterDetectMs = _pauseAfterDetectMs,
                 PauseScope = _pauseScope,
@@ -259,7 +251,7 @@ namespace MRS.ReaderService.Services
         {
             var normalized = NormalizeSettings(settings);
 
-            if (!_isMockMode && _isConnected)
+            if (_isConnected)
             {
                 Disconnect();
             }
@@ -267,24 +259,6 @@ namespace MRS.ReaderService.Services
             lock (_lock)
             {
                 ApplySettingsInMemory(normalized);
-            }
-
-            if (_isMockMode)
-            {
-                lock (_lock)
-                {
-                    _lastConnectResultCode = 0;
-                    _lastError = null;
-                    _updatedAt = DateTimeOffset.UtcNow;
-                }
-                return new ReaderConnectionTestResult
-                {
-                    Success = true,
-                    ResultCode = 0,
-                    Message = "Settings applied in mock mode",
-                    IpAddress = _ipAddress,
-                    NetworkPort = _networkPort
-                };
             }
 
             var connected = Connect();
@@ -306,8 +280,6 @@ namespace MRS.ReaderService.Services
         /// </summary>
         public bool Connect()
         {
-            if (_isMockMode) return true;
-
             lock (_lock)
             {
                 if (_isConnected)
@@ -370,8 +342,6 @@ namespace MRS.ReaderService.Services
         /// <summary>à¸›à¸´à¸” connection à¹à¸¥à¸° release handle</summary>
         public void Disconnect()
         {
-            if (_isMockMode) return;
-
             lock (_lock)
             {
                 if (!_isConnected) return;
@@ -416,19 +386,6 @@ namespace MRS.ReaderService.Services
         /// </summary>
         public async Task<string?> ReadNextCardAsync(CancellationToken cancellationToken)
         {
-            if (_isMockMode)
-            {
-                await Task.Delay(_pollIntervalMs, cancellationToken);
-
-                if (!_mockAutoGenerate)
-                    return null;
-
-                var mockCard = "MOCK-" + DateTime.UtcNow.Ticks.ToString()[^6..];
-                SetLastCard(mockCard);
-                return mockCard;
-            }
-
-            // â”€â”€â”€ Native mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             lock (_lock)
             {
                 if (!_isConnected || _portHandle < 0)
@@ -532,13 +489,11 @@ namespace MRS.ReaderService.Services
             }
         }
 
-        // â”€â”€â”€ Mock injection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // â”€â”€â”€ Manual injection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-        public bool TryInjectMockCard(string? cardNumber, out string? normalizedCardNumber)
+        public bool TryInjectManualCard(string? cardNumber, out string? normalizedCardNumber)
         {
             normalizedCardNumber = null;
-            if (!_isMockMode) return false;
-
             var card = cardNumber?.Trim();
             if (string.IsNullOrWhiteSpace(card)) return false;
 
@@ -552,7 +507,7 @@ namespace MRS.ReaderService.Services
         /// <summary>à¹€à¸›à¸´à¸” Buzzer + LED à¹€à¸¡à¸·à¹ˆà¸­à¸­à¹ˆà¸²à¸™ Tag à¸ªà¸³à¹€à¸£à¹‡à¸ˆ</summary>
         public void BeepOnSuccess()
         {
-            if (_isMockMode || !_isConnected) return;
+            if (!_isConnected) return;
 
             lock (_lock)
             {
@@ -655,8 +610,6 @@ namespace MRS.ReaderService.Services
         {
             return new ReaderConnectionSettings
             {
-                IsMockMode = settings.IsMockMode,
-                MockAutoGenerate = settings.MockAutoGenerate,
                 PollIntervalMs = Math.Clamp(settings.PollIntervalMs, 200, 60000),
                 ConnectionType = string.IsNullOrWhiteSpace(settings.ConnectionType)
                     ? "TCP"
@@ -679,8 +632,6 @@ namespace MRS.ReaderService.Services
 
         private void ApplySettingsInMemory(ReaderConnectionSettings settings)
         {
-            _isMockMode = settings.IsMockMode;
-            _mockAutoGenerate = settings.MockAutoGenerate;
             _pollIntervalMs = settings.PollIntervalMs;
             _connectionType = settings.ConnectionType;
             _ipAddress = settings.IpAddress;
@@ -696,7 +647,7 @@ namespace MRS.ReaderService.Services
 
         private void InitializeReaderParameters()
         {
-            if (_isMockMode || !_isConnected || _portHandle < 0)
+            if (!_isConnected || _portHandle < 0)
             {
                 return;
             }
@@ -719,7 +670,7 @@ namespace MRS.ReaderService.Services
 
         private void SyncReaderInformation()
         {
-            if (_isMockMode || !_isConnected || _portHandle < 0)
+            if (!_isConnected || _portHandle < 0)
             {
                 return;
             }

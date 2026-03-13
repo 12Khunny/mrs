@@ -32,13 +32,8 @@ namespace MRS.ReaderService.Controllers
         [HttpPost("manual")]
         public async Task<IActionResult> Manual([FromBody] ManualCardRequest request, CancellationToken cancellationToken)
         {
-            if (!_readerService.TryInjectMockCard(request.CardNumber, out var cardNumber))
+            if (!_readerService.TryInjectManualCard(request.CardNumber, out var cardNumber))
             {
-                if (!_readerService.IsMockMode)
-                {
-                    return BadRequest(new { message = "Manual injection is available only in mock mode" });
-                }
-
                 return BadRequest(new { message = "cardNumber is required" });
             }
 

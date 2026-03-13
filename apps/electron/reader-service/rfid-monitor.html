@@ -43,29 +43,6 @@
         <div id="cardBox" class="card-box">Latest RFID Code</div>
 
         <div class="section">
-          <h3>Manual Test</h3>
-          <div class="grid">
-            <div class="field">
-              <label>RFID Input</label>
-              <input
-                id="manualCardInput"
-                type="text"
-                placeholder="Enter RFID"
-              />
-            </div>
-            <div class="field">
-              <label>Actions</label>
-              <div class="actions" style="margin-top: 0">
-                <button id="manualSendBtn" class="btn-primary" type="button">
-                  Send
-                </button>
-              </div>
-            </div>
-          </div>
-          <div id="manualStatus" class="status-panel">Manual test : ready.</div>
-        </div>
-
-        <div class="section">
           
           <div class="actions" style="margin-top: 0">
                 <h3>Debug Tools <button id="toggleDebugBtn" class="btn-ghost btn-small" type="button">Show</button>
@@ -82,10 +59,7 @@
     <script>
       const params = new URLSearchParams(window.location.search);
       const defaultHubUrl = `${window.location.origin}/rfidHub`;
-      const defaultManualUrl = `${window.location.origin}/api/rfid/manual`;
       const hubUrl = params.get("hubUrl") || defaultHubUrl;
-      const manualUrl = params.get("manualUrl") || defaultManualUrl;
-      const manualAuthToken = params.get("token");
 
       const el = {
         serviceDot: document.getElementById("serviceDot"),
@@ -93,10 +67,7 @@
         readerDot: document.getElementById("readerDot"),
         readerText: document.getElementById("readerText"),
         cardBox: document.getElementById("cardBox"),
-        manualCardInput: document.getElementById("manualCardInput"),
-        manualSendBtn: document.getElementById("manualSendBtn"),
         openSettingsBtn: document.getElementById("openSettingsBtn"),
-        manualStatus: document.getElementById("manualStatus"),
         restartReaderBtn: document.getElementById("restartReaderBtn"),
         readerActionStatus: document.getElementById("readerActionStatus"),
         debugTools: document.getElementById("debugTools"),
@@ -121,59 +92,6 @@
           "Reader: connected",
           text || "Reader: disconnected",
         );
-      }
-
-      function getRequestHeaders() {
-        const headers = { "Content-Type": "application/json" };
-        if (manualAuthToken) {
-          headers.Authorization = manualAuthToken.startsWith("Bearer ")
-            ? manualAuthToken
-            : "Bearer " + manualAuthToken;
-        }
-        return headers;
-      }
-
-      async function postCardToMrs(cardNumber) {
-        const response = await fetch(manualUrl, {
-          method: "POST",
-          headers: getRequestHeaders(),
-          credentials: "include",
-          body: JSON.stringify({ cardNumber }),
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(payload.message || response.status);
-        }
-        return payload;
-      }
-
-      async function sendManualCard() {
-        const cardNumber = el.manualCardInput.value.trim();
-        if (!cardNumber) {
-          MrsUi.setPanelStatus(
-            el.manualStatus,
-            "Please enter card number",
-            "error",
-          );
-          return;
-        }
-
-        el.manualSendBtn.disabled = true;
-        MrsUi.setPanelStatus(el.manualStatus, "Sending...");
-        try {
-          const payload = await postCardToMrs(cardNumber);
-          const sentTag = payload.cardNumber || cardNumber;
-          MrsUi.setPanelStatus(el.manualStatus, "Sent: " + sentTag, "ok");
-          el.manualCardInput.value = "";
-        } catch (err) {
-          MrsUi.setPanelStatus(
-            el.manualStatus,
-            "Failed: " + err.message,
-            "error",
-          );
-        } finally {
-          el.manualSendBtn.disabled = false;
-        }
       }
 
       async function restartReaderConnection() {
@@ -276,12 +194,6 @@
         }
       }
 
-      el.manualSendBtn.addEventListener("click", sendManualCard);
-      el.manualCardInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          sendManualCard();
-        }
-      });
       el.restartReaderBtn.addEventListener("click", restartReaderConnection);
       el.readerText.addEventListener("click", () => {
         window.open(

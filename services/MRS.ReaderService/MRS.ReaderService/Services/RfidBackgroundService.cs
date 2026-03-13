@@ -23,18 +23,10 @@ namespace MRS.ReaderService.Services
         {
             _logger.LogInformation("RFID Background Service starting");
 
-            if (_readerService.IsMockMode)
+            var connected = _readerService.Connect();
+            if (!connected)
             {
-                _logger.LogWarning("RFID is running in Mock mode; real reader scan is disabled.");
-            }
-
-            if (!_readerService.IsMockMode)
-            {
-                var connected = _readerService.Connect();
-                if (!connected)
-                {
-                    _logger.LogError("Could not connect to RFID reader. Service will retry every 5 seconds.");
-                }
+                _logger.LogError("Could not connect to RFID reader. Service will retry every 5 seconds.");
             }
 
             var pauseUntilUtc = DateTimeOffset.MinValue;
@@ -46,7 +38,7 @@ namespace MRS.ReaderService.Services
             {
                 try
                 {
-                    if (!_readerService.IsMockMode && !_readerService.IsConnected)
+                    if (!_readerService.IsConnected)
                     {
                         _logger.LogWarning("Reader disconnected, attempting reconnect...");
                         _readerService.Connect();
@@ -55,8 +47,7 @@ namespace MRS.ReaderService.Services
                         continue;
                     }
 
-                    if (!_readerService.IsMockMode &&
-                        DateTimeOffset.UtcNow - lastReconnectAtUtc >= reconnectInterval)
+                    if (DateTimeOffset.UtcNow - lastReconnectAtUtc >= reconnectInterval)
                     {
                         _logger.LogWarning("Forcing reconnect (interval {Seconds}s).", (int)reconnectInterval.TotalSeconds);
                         _readerService.Disconnect();
@@ -76,10 +67,7 @@ namespace MRS.ReaderService.Services
                     var cardNumber = await _readerService.ReadNextCardAsync(stoppingToken);
                     if (string.IsNullOrWhiteSpace(cardNumber))
                     {
-                        if (!_readerService.IsMockMode)
-                        {
-                            await Task.Delay(_readerService.PollIntervalMs, stoppingToken);
-                        }
+                        await Task.Delay(_readerService.PollIntervalMs, stoppingToken);
                         continue;
                     }
 
